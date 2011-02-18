@@ -1,3 +1,903 @@
+commit 2fd67c34549f1703e8ca522f92be518b18f90e81
+Author: Ville Syrjälä <ville.syrjala@nokia.com>
+Date:   Thu Dec 16 18:22:13 2010 +0200
+
+    xfree86/modes: Take rotation into account when checking mode size
+    
+    Assume that a mode can be used in either landscape or portrait
+    orientation. I suppose the correct thing to do would be to
+    collect all the supported rotations from the CRTCs that can be used
+    with a specific output, but that information doesn't seem to be
+    readily available when these checks are done. So just assume that
+    either orientation is fine.
+    
+    Signed-off-by: Ville Syrjälä <ville.syrjala@nokia.com>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    (cherry picked from commit 2e781457d43ec4bf0d633257ac6852cde3b00541)
+    (cherry picked from commit aec278eb65fe1ca98ab551a8c3873a7195bad540)
+
+commit 6a6d907e77777057cadbd80572119c09732385cd
+Author: Tiago Vignatti <tiago.vignatti@nokia.com>
+Date:   Fri Dec 17 16:09:35 2010 +0200
+
+    randr: check for virtual size limits before set crtc
+    
+    Return a error if the screen is configured to an invalid size.
+    
+    Signed-off-by: Tiago Vignatti <tiago.vignatti@nokia.com>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    Reviewed-by: Daniel Stone <daniel@fooishbar.org>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit d1107918d4626268803b54033a07405122278e7f)
+
+commit 5b979a13df331ad28ce7f1c90d6e059f6fd4eedb
+Author: Michel Dänzer <daenzer@vmware.com>
+Date:   Wed Dec 22 11:45:36 2010 +0100
+
+    EXA: Fix crash with fill using 1x1 tile of depth < 8 (bug #24703).
+    
+    Fixes http://bugs.freedesktop.org/show_bug.cgi?id=24703 .
+    
+    Signed-off-by: Michel Dänzer <daenzer@vmware.com>
+    Reviewed-by: Dave Airlie <airlied@redhat.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit e06fa804009798ea95efa8babaabb0228dfdfe65)
+
+commit 561afd799fc4060111b650657f3a0a01cce484b3
+Author: Jörn Horstmann <launchpad@planetxml.de>
+Date:   Mon Dec 6 11:24:02 2010 +1100
+
+    Add EDID quirk for HP Compaq nc8430.
+    
+    Like some other LPL panels, this one reports the vertical size in cm rather
+    than mm.
+    Patch taken from Launchpad bug #380009 <https://launchpad.net/bugs/380009>
+    
+    X.Org Bug 28414 <https://bugs.freedesktop.org/show_bug.cgi?id=28414>
+    
+    Signed-off-by: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 4b88c7be8de4149fe3d166bf115775f9e81a1373)
+
+commit cd82012d5da9a88537e7079f8204853a886ab4e5
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Fri Dec 10 14:24:02 2010 -0500
+
+    x86emu: Fix more mis-decoding of the data prefix
+    
+    cc2c73ddcb4370a7c3ad439cda4da825156c26c9's three-cent titanium tax
+    doesn't go too far enough.  Fix the rest of the call and jmp
+    instructions to handle the data prefix correctly.
+    
+    Reference: Intel 64 and IA-32 Architectures Software Developer's Manual
+    Volume 2A: Instruction Set Reference, A-M
+    
+    http://www.intel.com/Assets/PDF/manual/253666.pdf
+    
+    Reviewed-by: Julien Cristau <jcristau@debian.org>
+    Signed-off-by: Adam Jackson <ajax@redhat.com>
+    (cherry picked from commit bb18f277156c08be028a6e12d8987fb1593e9168)
+
+commit 2194c381c8a0b4e1a163f9b0f6abe92093f531fa
+Author: Luc Verhaegen <libv@skynet.be>
+Date:   Sun Oct 24 23:57:06 2010 +0200
+
+    x86emu: fix jump_near_IMM to handle DATA: flag correctly.
+    
+    Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=24348
+    
+    Before (data flag ignored -> broken):
+    66                  DATA:
+    e944f1              JMP       1ff6
+    
+    After (fixed):
+    66                  DATA:
+    e944f1ffff          JMP       00001ff8
+    
+    This subtle difference in the length of decoded instruction meant
+    that the VBE call jumped to the routine setting AX=0x14F (VBE Failed)
+    instead of the routine that set AX=0x4F (VBE success).
+    
+    The ability to run the same code in vm86 significantly aided the
+    debugging of this issue. Those X.org developers who would like to drop
+    vm86 better take special care towards _all_ vesa bugs, as those will
+    expose further issues.
+    
+    Patch applies easily to even xserver 1.4.2.
+    
+    Signed-off-by: Luc Verhaegen <libv@skynet.be>
+    Tested-by: Luc Verhaegen <libv@skynet.be>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit cc2c73ddcb4370a7c3ad439cda4da825156c26c9)
+
+commit c038d008e4004914dc5ad58ba73d51baf0cd91ac
+Author: James Jones <jajones@nvidia.com>
+Date:   Mon Dec 6 13:36:14 2010 -0800
+
+    Add and use SERVER_SYNC_*_VERSION
+    
+    Most extensions have a version defined
+    in the protocol headers, and also in the
+    server's protocol-versions.h.  The latter
+    defines which version the server advertises
+    support for.  Sync wasn't included in
+    protocol-versions.h, and was advertising
+    support for whatever was in the protocol
+    headers the server was built against.
+    
+    Signed-off-by: James Jones <jajones@nvidia.com>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 27593eea7efcbed8de0c6e8233cbd1a1b8a50459)
+
+commit 472163b7f3a5e7aa7f40fa81b1facc71dd3529bc
+Author: Andrea Canciani <ranma42@gmail.com>
+Date:   Tue Nov 2 20:10:32 2010 +0100
+
+    render: Fix byteswapping of gradient stops
+    
+    The function swapStops repeatedly swaps the color components as
+    CARD16, but incorrectly steps over them as if they were CARD32.
+    
+    This causes half of the stops not to be swapped at all and some
+    unrelated data be swapped instead.
+    
+    Signed-off-by: Andrea Canciani <ranma42@gmail.com>
+    Reviewed-by: Soren Sandmann <sandmann@daimi.au.dk>
+    Reviewed-by: Julien Cristau <jcristau@debian.org>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit dab064fa5e0b1f5c67222562ad5367005832cba1)
+
+commit 6f7f3e2b799984e1b8aade89726dc226fc0b89ac
+Author: Cyril Brulebois <kibi@debian.org>
+Date:   Wed Dec 1 14:12:55 2010 +0100
+
+    Fix screen number checks.
+    
+    screenInfo.numScreens is not a valid screen number, they go from 0 to
+    numScreens - 1.
+    
+    Signed-off-by: Cyril Brulebois <kibi@debian.org>
+    Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 279ef1ffd787dba2f0d5056849b9cb15d36aa3eb)
+
+commit bcab9213fbafa3091d2f5c831bb668cacaec5f8b
+Author: Julien Cristau <jcristau@debian.org>
+Date:   Tue Nov 30 17:23:10 2010 +0100
+
+    DGA: fix screen number check
+    
+    screenInfo.numScreens is not a valid screen number, they go from 0 to
+    numScreens - 1.
+    
+    Signed-off-by: Julien Cristau <jcristau@debian.org>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 8684543021b9b1aa165b1bc69bc58685cb5942c1)
+
+commit f86265529b1506a3946d6e3d6fed77a6702108b1
+Author: Bill Nottingham <notting@redhat.com>
+Date:   Mon Nov 15 11:25:14 2010 +1000
+
+    xfree86: store the screen's gamma information on init.
+    
+    This fixes a gamma issue on vt switch observed with KDM. VT switching away
+    and back would result in a black screen. Avoid this by storing the current
+    gamma information on init.
+    
+    https://bugzilla.redhat.com/show_bug.cgi?id=533217
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 566d09a5cd6452ee2e05e23d2205e7c3aa31f0da)
+
+commit 333a6355917c552132e1dd3a2aa066c5b7e70566
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Mon Nov 15 11:25:12 2010 +1000
+
+    xfree86: apply gamma settings on EnterVT.
+    
+    When entering the VT, re-apply the saved gamma settings for each screen.
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit c050aa2f5fa6a7ff8ce4f91def14ca44f799f067)
+
+commit c9bca39848add875a76cf2434aabbadb97ddd721
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Wed Jun 9 17:10:57 2010 +1000
+
+    Xi: move property reset from extension shutdown to init.
+    
+    If any part of the stack calls XIGetKnownProperty during device shutdown
+    the property is re-initialized before the server generation resets, leaving
+    the value invalid again.
+    
+    Move the reset to the extension init which happens before input devices are
+    initialized before the first property is requested.
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Reviewed-by: Julien Cristau <jcristau@debian.org>
+    (cherry picked from commit 5cd11d2356d153840f1b429bdb8284367f8dc468)
+
+commit 266dc682f623a2aca6654c42164a8d8b9362c53b
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Fri May 7 16:22:12 2010 +1000
+
+    Xi: reset the known properties at the end of the server generation.
+    
+    Properties allocated through XIGetKnownProperty() aren't reset on the second
+    server generation but keep the old value. As a result, wrong Atoms are
+    supplied to the driver, resulting in potential data corruption or weird
+    error message.
+    
+    Reproducible by running "xlsatom | grep FLOAT" twice on a plain X server.
+    The second X server generation won't have the FLOAT atom defined anymore,
+    despite the users of this atom not noticing any errors.
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Reviewed-by: Julien Cristau <jcristau@debian.org>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 9802839d35aaf788790f1d0e8300db4693a70096)
+
+commit 240e7c50cecdcc0ce6087e141f11f165d828a7e9
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Mon Oct 18 15:42:54 2010 -0400
+
+    ddc: Don't probe for DDC/CI or EEPROM
+    
+    For whatever reason, some (broken) monitors will crash if you do this.
+    We're not actually using this information for anything, so let's just
+    not do it.
+    
+    Originally reported as http://bugzilla.redhat.com/620333
+    
+    Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+    Signed-off-by: Adam Jackson <ajax@redhat.com>
+    (cherry picked from commit d2064fbb687839c297a851a5d85f32dfbbe4a0d5)
+
+commit d7c2f764b399152eeaaf18b82abaf941574e6744
+Author: Dirk Wallenstein <halsmit@t-online.de>
+Date:   Sat Apr 17 21:36:23 2010 +0200
+
+    xkb: Fix omissions in geometry initialization #27679
+    
+    _XkbCopyGeom did not copy all of the data from the source geometry. This
+    resulted in failures when trying to obtain the keymap from a server
+    where the default geometry has not been replaced by a custom
+    configuration.
+    
+    Signed-off-by: Dirk Wallenstein <halsmit@t-online.de>
+    Reviewed-by: Daniel Stone <daniel@fooishbar.org>
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    (cherry picked from commit bac1c5f1be4588b2b1eb646ee98a5442e1b767d5)
+
+commit 8981b0a99ca5828ddc1b375c269aa493af40e6fd
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Sat Jun 12 08:19:16 2010 -0700
+
+    Don't coredump on "X -showopts" (bug 25874)
+    
+    Don't try walking the xf86ConfigLayout.screens table if it's empty
+    https://bugs.freedesktop.org/show_bug.cgi?id=25874
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+    Reviewed-by: Tiago Vignatti <tiago.vignatti@nokia.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit b8615d592700b7be319c04cc0563fdeb5a266534)
+
+commit a3e6e599f50902712f4a10fdbf806371335aaed3
+Author: Nicolas George <nicolas.george@normalesup.org>
+Date:   Wed Jun 2 13:40:51 2010 +0200
+
+    Change keyboard controls on slave keyboards (#27926)
+    
+    Makes the use of IsMaster in ProcChangeKeyboardControl consistent with other
+    similar loops.
+    
+    Signed-off-by: Nicolas George <nicolas.george@normalesup.org>
+    Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    (cherry picked from commit 968a79dcf5e17ac3963953ef56b8f94dbd75323b)
+
+commit 48407d86e3be526826c2207886ec304779c93f78
+Author: Ben Skeggs <bskeggs@redhat.com>
+Date:   Mon Jun 7 10:21:18 2010 +1000
+
+    randr: prevent an unnecessary screen resize with multiple displays
+    
+    crtc->{x,y} is always 0 when xf86DefaultScreenLimits() is called, so we
+    calculate too small an area for the initial framebuffer and force a resize
+    to happen.
+    
+    This commit fixes the code to use desired{X,Y} instead, which contains the
+    initial output positions.
+    
+    Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+    Reviewed-by: Dave Airlie <airlied@redhat.com>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit f7af00e9f0e0e1d854b0e882378c032518ab71ca)
+
+commit a6374668bda2cb78736e5f603f048adea1822d08
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Thu Jun 10 12:21:36 2010 +1000
+
+    Xi: don't copy the modifier key count when copying device classes (#25480)
+    
+    The modifier key count is maintained by the XKB layer and
+    increased/decreased for all modifiers that set state.
+    
+    Test case, MD/SD modifier key count in comment:
+    1. keyboard 1: press and hold Shift_L    # SD:1     MD:1
+    2. keyboard 2: press and release Shift_L # SD:1,0   MD:1,0
+    <class copy happens>                     # SD:1     MD:1
+    3. keyboard 1: release Shift_L           # SD:0     MD:1
+    4. keyboard 1: press and release Shift_L # SD:1,0   MD:2,1
+    
+    The modifier is now logically down on the MD but not on keyboard 1 or
+    keyboard 2.
+    
+    XKB is layered in before the DIX, it increases/decreases the modifier key
+    count accordingly. In the above example, during (2), the MD gets the key
+    release and thus clears the modifier bit. (3) doesn't forward the release to
+    the MD because it is already cleared. The copy of modifierKeysDown when the
+    lastSlave changes however increases the counter for the held key. On (4),
+    the press and release are both forwarded to the MD, causing a offset by 1
+    and thus do not clear the logical modifier state.
+    
+    X.Org Bug 25480 <http://bugs.freedesktop.org/show_bug.cgi?id=25480>
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Acked-by: Daniel Stone <daniel@fooishbar.org>
+    (cherry picked from commit dc614484f93b67e8b62dbb1bb2fd247fe5a4c850)
+
+commit 6892697640701563921630295597be7f168cf55e
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Mon Jun 21 10:05:08 2010 +1000
+
+    rotation: fix cursor and overlap of one pixel.
+    
+    Commit 77c7a64e8885696665556c9fbcb3cffb552e367a was introduced to fix
+    a cursor off by one on Intel hw, however it also move the whole crtc
+    into an off by one position and you could see gnom-eshell overlapping.
+    
+    This commit reverts that and instead fixes the cursor hotspot
+    translation to work like pixman does. We add 0.5 to the cursor vector
+    before translating, and floor the value afterwards.
+    
+    Thanks to Soeren (ssp) for pointing out where the real problem was
+    after explaning how pixman translates points.
+    
+    Signed-off-by: Dave Airlie <airlied@redhat.com>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 80d1a548d6ce73c2ff097536c1bc7044bf74965d)
+
+commit 06fda4d3c8d0fdf1c533dcb91b60592a75f4ee3f
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Thu Jun 24 12:52:53 2010 +1000
+
+    Revert "dix: use the event mask of the grab for TryClientEvents."
+    
+    Behaviour of earlier X servers was to deliver the ButtonPress event
+    unconditionally, regardless of the actual event mask being set. This is
+    documented in the protocol:
+    "This request establishes a passive grab.  In the future, the pointer is
+    actively grabbed as described in GrabPointer, the last-pointer-grab time is
+    set to the time at which the button was pressed (as transmitted in the
+    ButtonPress event), and the ButtonPress event is reported if all of the
+    following conditions are true:
+        <list of conditions, event mask is not one of them>"
+    
+    Thus, a GrabButton event will always deliver the button press event, a
+    GrabKey always the key press event, etc. Same goes for XI and XI2.
+    
+    Reproducible with a simple client requesting a button grab in the form of:
+        XGrabButton(dpy, AnyButton, AnyModifier, win, True, ButtonReleaseMask,
+                    GrabModeAsync, GrabModeAsync, None, None);
+    
+    On servers before MPX/XI2, the client will receive a button press and
+    release event. On current servers, the client receives only the release.
+    Clients that expect the press event to be delivered unconditionally.
+    
+    XTS Xlib13 XGrabButton 5/39 now passes.
+    
+    This reverts commit 48585bd1e3e98db0f3df1ecc68022510216e00cc.
+    Effectively reverts commit 1c612acca8568fcdf9761d23f112adaf4d496f1b as well,
+    the code introduced with 1c612 is not needed anymore.
+    
+    Conflicts:
+    
+    	dix/events.c
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Acked-by: Daniel Stone <daniel@fooishbar.org>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 1884db430a5680e37e94726dff46686e2218d525)
+
+commit 2fce4783f41b7fb1106b2945cc98bfc8da39501d
+Author: Joe Shaw <joeshaw@litl.com>
+Date:   Thu Oct 14 15:09:20 2010 -0400
+
+    fix a sign problem with valuator data.
+    
+    Without this patch, any negative valuator value is wrong when returned
+    from XQueryDeviceState().  This is a regression from at least xserver
+    1.4.
+    
+    Valuator data is set in dix/getevents.c:set_valuators() by copying
+    signed int values into an unsigned int field
+    DeviceEvent.valuators.data.
+    
+    That data is converted into a double with an implicit cast by
+    assignment to axisVal[i] in Xi/exevents.c:UpdateDeviceState().
+    
+    That double is converted back to a signed int in
+    queryst.c:ProcXQueryDeviceState().  If the original value in
+    set_valuators() is negative, the double value will be > 2^31 and the
+    conversion back to a signed int is undefined.  (Although I
+    consistently see the value -2^31.)
+    
+    Fix this by changing the definition of DeviceEvent.valuators.data from
+    uint32_t to int32_t.
+    
+    Signed-off-by: Joe Shaw <joeshaw@litl.com>
+    Reviewed-by: Chase Douglas <chase.douglas@canonical.com>
+    Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    (cherry picked from commit e354ccac36a8ee3a23bdc845833c16a5646cc200)
+
+commit 9d939ea0f42954f40bbc8388b7c7f62470cdf338
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Mon Feb 15 16:54:35 2010 -0500
+
+    dix: Default DPMS timeout values to match screensaver values
+    
+    These have the same default, but if you specify something different with
+    -s on the command line, only the screensaver time is changed.  As DPMS
+    is usually what's desired, change it to match.
+    
+    Signed-off-by: Adam Jackson <ajax@redhat.com>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 2a763c9023b8bc978b32eaa56d2c625b6f2badee)
+
+commit 0ca9f07f7349afc41bdb68a8956c24be1d7d779e
+Author: Aaron Plattner <aplattner@nvidia.com>
+Date:   Fri Aug 27 10:20:29 2010 -0700
+
+    os: Return BadLength instead of disconnecting BigReq clients (#4565)
+    
+    If a client sends a big request that's too big (i.e. bigger than
+    maxBigRequestSize << 2 bytes), the server just disconnects it.  This makes the
+    client receive SIGPIPE the next time it tries to send something.
+    
+    The X Test Suite sends requests that are too big when the test specifies the
+    TOO_LONG test type.  When the client receives SIGPIPE, XTS marks it as
+    UNRESOLVED, which counts as a failure.
+    
+    Instead, remember how long the request is supposed to be and then return that
+    size.  Dispatch() checks the length and sends BadLength to the client.  Then,
+    whenever oci->ignoreBytes is nonzero, ignore the data read instead of trying to
+    process it as a request.
+    
+    Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit cf88363db0ebb42df7cc286b85d30d7898aea840)
+
+commit 3336e1f7f3d7a0e37cc75f7edd96524dd6cf228a
+Author: Keith Packard <keithp@keithp.com>
+Date:   Mon Jul 12 16:01:34 2010 -0700
+
+    Unwrap/rewrap EnterVT/LeaveVT completely, Fixes 28998
+    
+    Because some EnterVT code needs to remove it self from the
+    call chain, we need to fix all of the wrappers to correctly
+    unwrap/rewrap during the call chain. This is a follow-on to the fix
+    for bug 27114 in commit 68a9ee8370e6f9b38218376ac92d5130a5b0ef1e.
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    Tested-by: Jesse Barnes <jesse.barnes@intel.com>
+    Reviewed-by: Daniel Stone <daniel@fooishbar.org>
+    Reviewed-by: Tiago Vignatti <tiago.vignatti@nokia.com>
+    (cherry picked from commit d75e8146c414bfd512ba5dbd4a83acb334bbe19b, and
+    conflict from b618705 fixed up)
+    Signed-off-by: Julien Cristau <jcristau@debian.org>
+
+commit 3fabfc198b6f22338f7691907db1b7c849ccac4c
+Author: Keith Packard <keithp@keithp.com>
+Date:   Fri May 7 22:56:04 2010 -0700
+
+    Clean up RandR12 bits on screen close (bug 27114)
+    
+    When resetting the server, pScrn->EnterVT must be unwrapped or the
+    next server generation will end up wrapping the wrapper and causing an
+    infinite recursion on EnterVT.
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    Tested-by: Michael Stapelberg <michael+freedesktop@stapelberg.de>
+    (cherry picked from commit 68a9ee8370e6f9b38218376ac92d5130a5b0ef1e)
+
+commit 4c313472c45de171efb76231e7c7f323aa4eda3f
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Thu May 20 17:56:26 2010 -0700
+
+    Xserver(1) man page updates
+    
+    - Note that -br is now default.
+    - Move -bs after -br for alphabetical ordering.
+    - Remove -config option that's been hidden in "ignore" section,
+      since ajax removed the -config code a couple years back.
+    - Add -nocursor option.
+    - Add xinput & xrandr to list of runtime server control programs
+    - Replace XDarwin with Xquartz in list of Xservers
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 7b09335a46f9428141811230c69eef7968531359)
+
+commit 7787526a715a3179085bdc70110f5102a02706e3
+Author: Simon Farnsworth <simon.farnsworth@onelan.com>
+Date:   Tue Jun 22 10:13:30 2010 +0100
+
+    Don't crash when asked if a client that has disconnected was local
+    
+    ProcDRI2Dispatch uses LocalClient to determine if it's safe to respond
+    to a client that has made DRI2 requests which aren't sensible for
+    remote clients (anything but version). When the client has disappeared
+    mid-request stream (e.g. as a result of a kill -9, or a client-side
+    bug), LocalClient causes the X server to follow suit, as
+    ((OsCommPtr)client->osPrivate)->trans_conn is NULL at this point.
+    
+    The simple and obvious fix is to just return "not local" when
+    trans_conn is NULL, which fixes the crash I was seeing; however Keith
+    Packard pointed out that just checking trans_conn isn't enough;
+    quoting Keith:
+    
+    "This looks almost right to me -- I reviewed the os code to see when
+    _XSERVTransClose is called (which is what frees the trans_conn data) and
+    found that every place which called that immediately set trans_conn to
+    NULL, except for the call in CloseDownFileDescriptor which is only
+    called from CloseDownConnection and which is immediately followed by
+    freeing the OsCommRec and setting client->osPrivate to NULL. So, I'd
+    suggest checking client->osPrivate in addition to the above check."
+    
+    Signed-off-by: Simon Farnsworth <simon.farnsworth@onelan.com>
+    Reviewed-by: Keith Packard <keithp@keithp.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 660f6ab5494a728c3ca7ba00c305e9ff06c8ecb2)
+
+commit e1cf1e88bb527d48f7bdea5fc0091a1bd651acec
+Author: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date:   Thu Apr 29 18:45:34 2010 -0700
+
+    Fix compiler issues with getifaddrs() call on OpenSolaris
+    
+    OpenSolaris recently added support for the getifaddrs() API.
+    
+    Building with that uncovered two compiler issues (one warning, one error)
+    in the code that was now being built for the first time in our builds:
+    
+    "access.c", line 768: warning: argument #1 is incompatible with prototype:
+            prototype: pointer to struct sockaddr {unsigned short sa_family, array[14] of char sa_data} : "access.c", line 213
+            argument : pointer to struct sockaddr_storage {unsigned short ss_family, array[6] of char _ss_pad1, double _ss_align, array[240] of char _ss_pad2}
+    
+    "access.c", line 838: assignment type mismatch:
+            struct sockaddr {unsigned short sa_family, array[14] of char sa_data} "=" struct sockaddr_storage {unsigned short ss_family, array[6] of char _ss_pad1, double _ss_align, array[240] of char _ss_pad2}
+    
+    Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+    Reviewed-by: Jamey Sharp <jamey@minilop.net>
+    (cherry picked from commit e42a29d269fadc11e065c63ee369e3165196f2d7)
+
+commit c4717321c01678209ea5c7215d31556f6eadb798
+Author: Jesse Adkins <jesserayadkins@gmail.com>
+Date:   Wed Aug 4 23:39:14 2010 -0700
+
+    xfree86: parser: Never use constant strings for driver names (fixes #17438)
+    
+    When the parser sees the "keyboard" driver, it automatically (and
+     silently) replaces it with the constant string "kbd".
+    Everybody else uses malloc'd memory for the driver name, so input
+     device closure assumes it can use free.
+    Free val.str, so this crash doesn't turn into a memory leak. Whew.
+    
+    Signed-off-by: Jesse Adkins <jesserayadkins@gmail.com>
+    Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    (cherry picked from commit bce12f2956f23c0ee53f7f6485dba631293a0931)
+
+commit 7c544986656713b5bbdb936bb7c3cb5a83d9f833
+Author: Keith Packard <keithp@keithp.com>
+Date:   Fri Aug 20 10:01:48 2010 -0700
+
+    fb: make isClipped always reject negative coordinates (bug 11503)
+    
+    A window with either dimension > 32767 can be positioned such that
+    coordinates > 32767 are visible on the screen. Attempts to draw to
+    those pixels will generate coordinates wrapped around to negative
+    values.
+    
+    The optimized clipping macro, 'isClipped', in fbbits.h, computes
+    clipping in window space rather than screen space using int16 values,
+    and so it too has coordinates wrapped around to negative values and
+    hence ends up accepting the wrapped drawing coordinates.
+    
+    Two possible fixes for this problem
+    
+     1) Detect wrapped region coordinates and clip those to 32767.
+     2) Detect negative incoming coordinates and reject those
+    
+    This patch takes the second approach as it is much shorter, simply
+    detecting when either X or Y incoming coordinate is negative, which
+    can never be 'within' any drawable.
+    
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    (cherry picked from commit 3e56efcfb63677cd8574e1e435e61d96f79ea536)
+
+commit f43e105ee8741c8be49a602b08752f2390f094f7
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri Aug 20 13:51:04 2010 +0100
+
+    edid: Adjust rounding of max_clock
+    
+    A simple hack to accommodate various EDID who have detailed modes that
+    exceed the EDID's max pixel clock. The pixel clock is only defined in
+    units of 10MHz and often appears as the maximum pixel code of the
+    detailed modes, rounded to the nearest 10MHz. Adjusting the max_clock to
+    include an extra 5MHz prevents the parser from rejecting the detailed
+    modes.
+    
+    The kernel uses the same fuzz and by including it in X we can use the
+    same modes in X as for the console.
+    
+    Fixes:
+    
+      Bug 23833 - X uses different refresh rate to that set by kernel module
+      https://bugs.freedesktop.org/show_bug.cgi?id=23833
+    
+    In the future, we will want to try harder to keep the KMS modes but at
+    the same time we need to apply the restrictions as specified by the
+    user's configuration, and need to fill in modes for fullscreen games on
+    fixed-mode panels.
+    
+    Reported-and-tested-by: Fabio Pedretti <fabio.ped@libero.it>
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 951605b4660290044fb238bcf1d6d9e498567e8c)
+
+commit d5248f036470150bd68148755b47abbbae3bfb33
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Mon Jun 28 18:08:50 2010 -0400
+
+    render: Bounds check for nglyphs in ProcRenderAddGlyphs (#28801)
+    
+    Signed-off-by: Adam Jackson <ajax@redhat.com>
+    Reviewed-by: Julien Cristau <jcristau@debian.org>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 5725849a1b427cd4a72b84e57f211edb35838718)
+
+commit 845f0bb1b941e770d88c40afe029e2fedd8655d9
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Aug 10 19:30:20 2010 +0100
+
+    xace: Invalid reference to out-of-scope data.
+    
+    The callback data passed by reference to the hook was allocated on stack
+    within the scope of the case statement. The compiler is free to reuse
+    any of that stack space whilst making the function call so we may end up
+    passing garbage into the callback.
+    
+    References:
+    
+      Bug 18451 - Xorg server 1.5.2 SEGV during XFixesGetCursorImage()
+      https://bugs.freedesktop.org/show_bug.cgi?id=18451
+    
+    v2: Drop the unrelated hunk that snuck in when ammending the commit
+    message.
+    
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Reviewed-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 6dae7f3792611aace1df0cca63bf50c50d93de43)
+
+commit f07fc1461d38c8228d1bacf3d19932cac7bacddd
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Fri Jun 11 10:12:52 2010 +1000
+
+    xkb: fix invalid memory writes in _XkbCopyGeom.
+    
+    Classic strlen/strcpy mistake of
+       foo = malloc(strlen(bar));
+       strcpy(foo, bar);
+    
+    Testcase: valgrind Xephyr :1
+    
+    ==8591== Invalid write of size 1
+    ==8591==    at 0x4A0638F: strcpy (mc_replace_strmem.c:311)
+    ==8591==    by 0x605593: _XkbCopyGeom (xkbUtils.c:1994)
+    ==8591==    by 0x605973: XkbCopyKeymap (xkbUtils.c:2118)
+    ==8591==    by 0x6122B3: InitKeyboardDeviceStruct (xkbInit.c:560)
+    ==8591==    by 0x4472E2: CoreKeyboardProc (devices.c:577)
+    ==8591==    by 0x447162: ActivateDevice (devices.c:530)
+    ==8591==    by 0x4475D6: InitCoreDevices (devices.c:672)
+    ==8591==    by 0x4449EE: main (main.c:254)
+    ==8591==  Address 0x6f96505 is 0 bytes after a block of size 53 alloc'd
+    ==8591==    at 0x4A0515D: malloc (vg_replace_malloc.c:195)
+    ==8591==    by 0x6054B7: _XkbCopyGeom (xkbUtils.c:1980)
+    ==8591==    by 0x605973: XkbCopyKeymap (xkbUtils.c:2118)
+    ==8591==    by 0x6122B3: InitKeyboardDeviceStruct (xkbInit.c:560)
+    ==8591==    by 0x4472E2: CoreKeyboardProc (devices.c:577)
+    ==8591==    by 0x447162: ActivateDevice (devices.c:530)
+    ==8591==    by 0x4475D6: InitCoreDevices (devices.c:672)
+    ==8591==    by 0x4449EE: main (main.c:254)
+    
+    Reported-by: Dave Airlie <airlied@redhat.com>
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Reviewed-by-and-apologised-for: Daniel Stone <daniel@fooishbar.org>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 7f19a7a6e90a4fd7b7ec0256974f62e575218541)
+    
+    Conflicts:
+    
+    	xkb/xkbUtils.c
+    (cherry picked from commit f85552aa452d5f575fee9f6031a33ca79bdc3cc8)
+    
+    Signed-off-by: Julien Cristau <jcristau@debian.org>
+
+commit b9638391394d1f4797b5421fa4ccbe9d194eee5a
+Author: Pierre-Loup A. Griffais <pgriffais@nvidia.com>
+Date:   Wed Apr 21 18:11:05 2010 -0700
+
+    xf86: Don't crash when switching modes through RandR without owning the VT.
+    
+    While VT-switched, FB access is disabled and should remain so. Trying to switch
+    modes in that state would re-enable it, potentially causing crashes if trying
+    to access it before the driver has recovered from the mode switch.
+    
+    Signed-off-by: Pierre-Loup A. Griffais <pgriffais@nvidia.com>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 41bdb6c003cca3ef0ff88d9c7de318115bab1ba2)
+    
+    Signed-off-by: Julien Cristau <jcristau@debian.org>
+
+commit 5154dede3d53151f4bed43b0e1626abf64b91fc5
+Author: Éric Piel <E.A.B.Piel@tudelft.nl>
+Date:   Fri Jun 11 09:16:32 2010 -0700
+
+    exa: fix ExaCheckCopyNtoN for exa_classic when source = dest
+    
+    In case you want to copy a region with source = dest, you have the same pixmap
+    as source and dest.
+    
+    At the end of exaPixmapIsOffscreen_classic() the devPrivate.ptr is reset to
+    NULL (look at the sources).
+    
+    Now this is what happens in ExaCheckCopyNtoN:
+    
+    exaPrepareAccess( pDst );
+       Calls IsOffscreen()
+          sets devPrivate.ptr to NULL
+       sets up devPrivate.ptr to real pointer
+       Everything OK
+    exaPrepareAccess( pSrc );
+       Calls IsOffscreen()
+          sets devPrivate.ptr to NULL
+       BAILS OUT CAUSE OF NESTED OPERATION SINCE DST EQUALS SRC
+    
+    We end up with devPrivate.ptr as NULL, and that is clearly wrong.
+    
+    In particular this fixes a segfault when using the psb driver (bug 28077)
+    
+    Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
+    Reviewed-by: Michel Dänzer <michel@daenzer.net>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 7e8f1001217326cc451974bacf25275420c4bb4e)
+
+commit f44ebbd3d52fa0dfdc51f6635721592b70affb6e
+Author: Cyril Brulebois <kibi@debian.org>
+Date:   Mon Mar 1 02:11:36 2010 +0100
+
+    Fix null pointer dereference in xf86_reload_cursors().
+    
+    Upon resume, X may try to dereference a null pointer, which has been
+    reported in Debian bug #507916 (http://bugs.debian.org/507916).
+    
+    Jim Paris came up with a patch which solves the problem for him. Here's
+    a (hopefully) fixed version of his patch (without the typo).
+    
+    Cc: Jim Paris <jim@jtan.com>
+    Signed-off-by: Cyril Brulebois <kibi@debian.org>
+    Reviewed-By: Matthias Hopf <mhopf@suse.de>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit fa6c7012572093a82c9389682977efff85590719)
+
+commit d2f29b85d14fa56f22302854b585d04124b0db92
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Fri Apr 16 16:35:22 2010 +1000
+
+    xfree86: dga needs to use the master keyboard state (#27573)
+    
+    GetPairedDevice() may not always return the keyboard, resulting in a
+    null-pointer dereference when accessing the XKB state.
+    For floating devices, the GetMaster() returns the device itself.
+    
+    X.Org Bug 27573 <http://bugs.freedesktop.org/show_bug.cgi?id=27573>
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Reviewed-by: Daniel Stone <daniel@fooishbar.org>
+    Tested-by: Ben Hutchings <ben@decadent.org.uk>
+    (cherry picked from commit 10de9e8ee37265a35ceeceb2007d711da70d4f2d)
+
+commit 89a2b2771f799f371c25945df18440dc4695909a
+Author: Jeremy Huddleston <jeremyhu@apple.com>
+Date:   Sun May 16 10:03:13 2010 -0700
+
+    XQuartz: Don't use deltaXY for determining pointer location on scroll events
+    
+    <rdar://problem/7989690>
+    
+    Signed-off-by: Jeremy Huddleston <jeremyhu@apple.com>
+    Reviewed-by: Edward Moy <emoy@apple.com>
+    (cherry picked from commit ecfeabec8d0dcfe286fb893047f1fe1a7ea9f8f5)
+
+commit 754b995a3f08d72a6a91d72e891fa65548046379
+Author: Jeremy Huddleston <jeremyhu@apple.com>
+Date:   Sat May 15 10:53:09 2010 -0700
+
+    XQuartz: Don't trust deltaXY for middle mouse clicks.
+    
+    The middle mouse clicks return erroneous values after returning from
+    Fast User Switching.
+    
+    <rdar://problem/7979468>
+    http://xquartz.macosforge.org/trac/ticket/389
+    
+    Signed-off-by: Martin Otte <otte@duke.edu>
+    Reviewed-by: Jeremy Huddleston <jeremyhu@apple.com>
+    Reviewed-by: Edward Moy <emoy@apple.com>
+    Signed-off-by: Jeremy Huddleston <jeremyhu@apple.com>
+    (cherry picked from commit a911292c85f7069d2caabcb677ed716a04227526)
+
+commit 1e7a9b15de57e06bbcd33e2c43480ea4e4e7542a
+Author: Julien Cristau <jcristau@debian.org>
+Date:   Tue May 4 15:15:02 2010 +0200
+
+    XQuartz: add new localization files to EXTRA_DIST
+    
+    commit 206531f75cd41c034e89fdfbc75ab0910682eef8 added localization files
+    for ar, add them to the Makefile.
+    
+    Signed-off-by: Julien Cristau <jcristau@debian.org>
+    Reviewed-by: Jeremy Huddleston <jeremyhu@apple.com>
+    (cherry picked from commit 72758287f79a4f1aa8fa388f20947042e3e14693)
+
+commit c247f81ca188407ac2ddd31adcae00074b2cda0b
+Author: Chris Humbert <freedesktop@mahadri.com>
+Date:   Fri May 7 17:02:43 2010 +1000
+
+    dix: make DeviceEvent coordinates signed for Xinerama. #24986
+    
+    With Xinerama enabled, event coordinates are relative to Screen 0, so
+    they can be negative.  The new DeviceEvent's coordinates are of type
+    uint16_t, making screens above and to the left of Screen 0 unusable.
+    
+    X.Org Bug 24986 <https://bugs.freedesktop.org/show_bug.cgi?id=24986>
+    
+    Signed-off-by: Chris Humbert <freedesktop@mahadri.com>
+    Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+    (cherry picked from commit 21ed660f30a3f96c787ab00a16499e0fb034b2ad)
+
 commit e9a2eb86e9dd1f0d3d955bb7c16f2660c773e070
 Author: Peter Hutterer <peter.hutterer@who-t.net>
 Date:   Tue May 4 10:55:22 2010 +1000

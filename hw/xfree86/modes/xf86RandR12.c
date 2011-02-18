@@ -927,6 +927,24 @@ xf86RandR12Init (ScreenPtr pScreen)
 }
 
 void
+xf86RandR12CloseScreen (ScreenPtr pScreen)
+{
+    XF86RandRInfoPtr	randrp;
+
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(7,0,0,0,0)
+    if (xf86RandR12Key == NULL)
+	return;
+#endif
+
+    randrp = XF86RANDRINFO(pScreen);
+#if RANDR_12_INTERFACE
+    xf86Screens[pScreen->myNum]->EnterVT = randrp->orig_EnterVT;
+#endif
+
+    free(randrp);
+}
+
+void
 xf86RandR12SetRotations (ScreenPtr pScreen, Rotation rotations)
 {
     XF86RandRInfoPtr	randrp;
@@ -1754,12 +1772,24 @@ static Bool
 xf86RandR12EnterVT (int screen_index, int flags)
 {
     ScreenPtr        pScreen = screenInfo.screens[screen_index];
+    ScrnInfoPtr	     pScrn = xf86Screens[screen_index];
     XF86RandRInfoPtr randrp  = XF86RANDRINFO(pScreen);
+    rrScrPrivPtr     rp = rrGetScrPriv(pScreen);
+    Bool	     ret;
 
     if (randrp->orig_EnterVT) {
-	if (!randrp->orig_EnterVT (screen_index, flags))
+	pScrn->EnterVT = randrp->orig_EnterVT;
+	ret = pScrn->EnterVT (screen_index, flags);
+	randrp->orig_EnterVT = pScrn->EnterVT;
+	pScrn->EnterVT = xf86RandR12EnterVT;
+	if (!ret)
 	    return FALSE;
     }
+
+    /* reload gamma */
+    int i;
+    for (i = 0; i < rp->numCrtcs; i++)
+	xf86RandR12CrtcSetGamma(pScreen, rp->crtcs[i]);
 
     return RRGetInfo (pScreen, TRUE); /* force a re-probe of outputs and notify clients about changes */
 }
@@ -1770,6 +1800,7 @@ xf86RandR12Init12 (ScreenPtr pScreen)
     ScrnInfoPtr		pScrn = xf86Screens[pScreen->myNum];
     rrScrPrivPtr	rp = rrGetScrPriv(pScreen);
     XF86RandRInfoPtr	randrp  = XF86RANDRINFO(pScreen);
+    int i;
 
     rp->rrGetInfo = xf86RandR12GetInfo12;
     rp->rrScreenSetSize = xf86RandR12ScreenSetSize;
@@ -1799,6 +1830,9 @@ xf86RandR12Init12 (ScreenPtr pScreen)
      */
     if (!xf86RandR12SetInfo12 (pScreen))
 	return FALSE;
+    for (i = 0; i < rp->numCrtcs; i++) {
+	xf86RandR12CrtcGetGamma(pScreen, rp->crtcs[i]);
+    }
     return TRUE;
 }
 
