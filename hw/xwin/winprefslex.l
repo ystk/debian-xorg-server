@@ -88,7 +88,7 @@ ATSTART                 { return ATSTART; }
 ATEND                   { return ATEND; }
 EXEC                    { return EXEC; }
 ALWAYSONTOP             { return ALWAYSONTOP; }
-DEBUG                   { return DEBUG; }
+DEBUG                   { return DEBUGOUTPUT; }
 RELOAD                  { return RELOAD; }
 TRAYICON                { return TRAYICON; }
 SILENTEXIT		{ return SILENTEXIT; }
@@ -113,14 +113,18 @@ yywrap (void)
 /*
  * Run a file through the yacc parser
  */
-void
+int
 parse_file (FILE *file)
 {
+  int ret;
+
   if (!file)
-    return; 
+    return 1;
   
   yylineno = 1;
   yyin = file;
-  yyparse ();
+  ret = yyparse ();
+  yylex_destroy ();
+  return ret;
 }
 

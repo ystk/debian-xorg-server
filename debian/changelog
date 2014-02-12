@@ -1,25 +1,489 @@
-xorg-server (2:1.7.7-13) stable; urgency=low
+xorg-server (2:1.12.4-6+deb7u1) stable-security; urgency=low
 
+  * CVE-2013-4396
+
+ -- Moritz Muehlenhoff <jmm@debian.org>  Mon, 21 Oct 2013 16:43:03 +0000
+
+xorg-server (2:1.12.4-6) unstable; urgency=low
+
+  * Touch: Fix duplicate TouchBegin selection with virtual devices
+    (closes: #696272)
+  * Xi: Don't check for TOUCH_END, it's never set
+  * Xi: Update the device after delivering the emulated pointer event
+    (closes: #702662)
+  * xf86: fix flush input to work with Linux evdev devices.  Addresses
+    CVE-2013-1940.
+
+ -- Julien Cristau <jcristau@debian.org>  Wed, 17 Apr 2013 12:12:30 +0200
+
+xorg-server (2:1.12.4-5) unstable; urgency=low
+
+  * dmx: don't include dmx-config.h from xdmxconfig (closes: #495816)
+  * xfree86: bail on misformed acpi strings (closes: #696110)
+  * dix: don't allow overriding a grab with a different type of grab
+  * dix: Set focus field on XI2 crossing events (closes: #699907)
+  * Link against -lbsd on kfreebsd.  This gives us access to getpeereid(), and
+    makes MIT-SHM work with non-world-accessible segments (closes: #701469).
+
+ -- Julien Cristau <jcristau@debian.org>  Sat, 23 Feb 2013 15:37:44 +0100
+
+xorg-server (2:1.12.4-4) unstable; urgency=low
+
+  * Fix memory leak in libnettle sha1 patch.  Thanks, Yaakov Selkowitz!
+  * Cherry-pick from upstream:
+    - dix: set the device transformation matrix.  Avoids cursor jumps in
+      virtualbox (closes: #694598)
+
+ -- Julien Cristau <jcristau@debian.org>  Thu, 29 Nov 2012 19:27:31 +0100
+
+xorg-server (2:1.12.4-3) unstable; urgency=low
+
+  * Replace EXA patch from previous upload with the one actually applied
+    upstream (closes: #666468).
+
+ -- Julien Cristau <jcristau@debian.org>  Mon, 05 Nov 2012 10:44:58 +0100
+
+xorg-server (2:1.12.4-2) unstable; urgency=low
+
+  * Fix Xephyr command line option parsing (closes: #689246).  Thanks, Andrzej
+    Pietrasiewicz!
+  * Restore {in,out}{b,w,l} on ia64 (closes: #685750).  Thanks, Stephan
+    Schreiber!
+  * EXA: Fall back earlier and more thoroughly from exaGlyphs (closes:
+    #666468).  Patch by Michel Dänzer stolen from upstream bugzilla.
+
+ -- Julien Cristau <jcristau@debian.org>  Wed, 24 Oct 2012 16:46:48 +0200
+
+xorg-server (2:1.12.4-1) unstable; urgency=low
+
+  * New upstream stable release.
+  * int10: fix pci_device_read_rom usage (closes: #686153).  Thanks, Stephan
+    Schreiber!
+  * Revert 'Unload submodules' (closes: #686152).  Seems to introduce a
+    regression, let's try that again later.  Thanks, Stephan Schreiber!
+  * Revert "fb: reorder Bresenham error correction to avoid overshoot".  Fixes
+    regression introduced in 1.12.3.902 (fdo#54168, closes: #688908)
+  * Add conflicts against obsolete evtouch input driver (hopefully closes:
+    #687268)
+
+ -- Julien Cristau <jcristau@debian.org>  Sun, 30 Sep 2012 12:47:00 +0200
+
+xorg-server (2:1.12.3.902-1) unstable; urgency=low
+
+  * New upstream release candidate
+    + glx: Free DRI2 drawable reference to destroyed GLX drawable
+      (closes: #681265, #674668)
+    + dix: make sure the mask is set for emulated scroll events
+      (closes: #684051)
+  * 03_fix-panning.diff: disable cursor confinement when panning is enabled
+    (closes: #643693)
+  * Video ABI bumped to 12.1, serverminver to 2:1.12.3.901.
+
+ -- Julien Cristau <jcristau@debian.org>  Tue, 21 Aug 2012 21:35:25 +0200
+
+xorg-server (2:1.12.3-1) unstable; urgency=low
+
+  * New upstream release.
+  * Install /var/lib/xkb/README.compiled in xserver-common.
+
+ -- Julien Cristau <jcristau@debian.org>  Wed, 18 Jul 2012 08:36:57 +0200
+
+xorg-server (2:1.12.1.902-1) unstable; urgency=medium
+
+  [ Julien Cristau ]
+  * xvfb-run: kill Xvfb when the script dies.
+  * xvfb-run: instead of waiting 3 seconds and hoping that's enough for Xvfb
+    to come up (and waiting 2.9 seconds too many in the general case), tell it
+    to send us SIGUSR1 when it's ready to accept connections.  This reduces
+    "xvfb-run -- xterm -e true" from ~3.2s to ~0.4s on a quick test.
+  * xvfb-run: fix xauth handling; setting XAUTHORITY when starting an X server
+    isn't actually useful, we need to use the -auth command-line parameter
+    instead.  Somehow this seems to have been broken all these years and
+    nobody noticed...
+
+  [ Cyril Brulebois ]
+  * New upstream release candidate for the 1.12 stable branch:
+    - Bring the usual lot of stability fixes.
+    - Fix segfault on server shutdown (Closes: #671812).
+    - Refactor logging, fixing a format string vulnerability which could lead
+      to a denial of service (“only”, thanks to the fortified sources). This
+      is CVE-2012-2118 (Closes: #673148).
+  * Bump severity to “medium” for those two important fixes.
+
+ -- Cyril Brulebois <kibi@debian.org>  Sun, 20 May 2012 10:52:52 +0200
+
+xorg-server (2:1.12.1-2) unstable; urgency=low
+
+  * Merge from server-1.12-branch up to 22a1953c4a to get:
+    - many XI 2.2 fixes.
+    - “os: make timers signal-safe”; fixing infinite loops with the
+      synaptics tap handling code.
+
+ -- Cyril Brulebois <kibi@debian.org>  Mon, 07 May 2012 01:46:16 +0200
+
+xorg-server (2:1.12.1-1) unstable; urgency=low
+
+  * New upstream release.
+  * Upload to unstable.
+
+ -- Cyril Brulebois <kibi@debian.org>  Tue, 01 May 2012 01:56:32 +0200
+
+xorg-server (2:1.12.0.902-1) experimental; urgency=low
+
+  * New upstream release candidate (1.12.1 RC2).
+  * Refresh patches, yay for automated re-indenting…
+
+ -- Cyril Brulebois <kibi@debian.org>  Wed, 11 Apr 2012 19:31:09 +0000
+
+xorg-server (2:1.12.0-1) experimental; urgency=low
+
+  * New upstream release.
+  * Bump x11proto-input-dev in Build-Depends and Depends.
+
+ -- Cyril Brulebois <kibi@debian.org>  Mon, 05 Mar 2012 11:18:41 +0100
+
+xorg-server (2:1.11.99.902-1) experimental; urgency=low
+
+  * New upstream release candidate (1.12 RC2):
+    - Fix FTBFS on ia64 and mips*.
+  * Bump x11proto-input-dev build-dep.
+
+ -- Cyril Brulebois <kibi@debian.org>  Thu, 02 Feb 2012 03:15:00 +0100
+
+xorg-server (2:1.11.99.901-1) experimental; urgency=low
+
+  * New upstream release candidate (1.12 RC1).
+  * Bump input ABI and serverminver again.
+  * Bump x11proto-input-dev build-dep/dep.
+
+ -- Cyril Brulebois <kibi@debian.org>  Fri, 30 Dec 2011 00:01:35 +0100
+
+xorg-server (2:1.11.99.2-1) experimental; urgency=low
+
+  * New upstream snapshot.
+  * Bump input ABI and serverminver again.
+
+ -- Cyril Brulebois <kibi@debian.org>  Tue, 20 Dec 2011 11:39:51 +0100
+
+xorg-server (2:1.11.99.1-1) experimental; urgency=low
+
+  * New upstream release snapshot (on the way to 1.12).
+  * Bump libpciaccess-dev, x11proto-input-dev build-deps.
+  * Update xserver-xorg-dev's dependencies:
+    - Add libpixman-1-dev.
+    - Bump x11proto-input-dev.
+  * Update serverminver with new server and ABI versions.
+  * Drop patches (merged upstream):
+    - 07-xfree86-fix-build-with-xv-disabled.diff
+    - 15-nouveau.diff
+
+ -- Cyril Brulebois <kibi@debian.org>  Thu, 15 Dec 2011 18:49:10 +0100
+
+xorg-server (2:1.11.2.901-1) unstable; urgency=low
+
+  * New upstream release candidate (1.11.3 RC1):
+    - As usual: Fixes for various crashes and correctness issues.
+    - In particular: Fix for crash when starting a game (in wine) twice
+      (Closes: #637448).
+    - Also: Fix crashes with server regeneration (Closes: #649420).
+  * Add some lintian overrides:
+    - xserver-xorg-core: breaks-without-version against virtual packages
+      is perfectly OK.
+  * Don't forget to ship xorg.conf.d(5) in xserver-xorg-core.
+
+ -- Cyril Brulebois <kibi@debian.org>  Tue, 29 Nov 2011 17:04:09 +0100
+
+xorg-server (2:1.11.1.902-1) unstable; urgency=low
+
+  * New upstream release candidate (1.11.2 RC2):
+    - Fixes for various crashes and correctness issues.
+
+ -- Cyril Brulebois <kibi@debian.org>  Wed, 02 Nov 2011 11:10:03 +0100
+
+xorg-server (2:1.11.1.901-2) unstable; urgency=high
+
+  * Merge from upstream to get CVEs fixed:
+    - Fix CVE-2011-4028: File disclosure vulnerability.
+    - Fix CVE-2011-4029: File permission change vulnerability.
+  * Set urgency to “high” accordingly.
+
+ -- Cyril Brulebois <kibi@debian.org>  Thu, 20 Oct 2011 15:04:53 +0200
+
+xorg-server (2:1.11.1.901-1) unstable; urgency=low
+
+  * New upstream release candidate (1.11.2 RC1)
+    + Disable check of double-aligned in test/input.c on Renesas SH
+      (closes: #636673)
+  * Use dpkg-buildflags to enable hardening with recent dpkg.
+  * Enable PIE with DEB_BUILD_MAINT_OPTIONS, but add -Bsymbolic to LDFLAGS to
+    reduce performance loss from PIE.
+  * Pass --disable-silent-rules to configure.
+  * Drop dh_testroot from clean target.
+  * Add dummy build-{arch,indep} targets depending on build.
+
+ -- Julien Cristau <jcristau@debian.org>  Sat, 15 Oct 2011 19:05:41 +0200
+
+xorg-server (2:1.11.1-1) unstable; urgency=high
+
+  [ Cyril Brulebois ]
+  * Bump glproto dependency for xserver-xorg-dev (Closes: #639651).
+  * Set urgency to “high” since there were no issues other than the libwfb
+    one (see below) in the last 4 weeks.
+
+  [ Julien Cristau ]
+  * New upstream bugfix release
+    - belatedly bump extension ABI major
+    - add missing fbFoo → wfbFoo renames for libwfb.so, fixing issues with the
+      nvidia driver (closes: #641344)
+
+ -- Cyril Brulebois <kibi@debian.org>  Sat, 24 Sep 2011 11:23:17 +0200
+
+xorg-server (2:1.11.0-1) unstable; urgency=low
+
+  [ Julien Cristau ]
+  * Make xvfb, xnest, xserver-xephyr and xserver-xfbdev provide the xserver
+    virtual package again.
+
+  [ Cyril Brulebois ]
+  * New upstream release:
+    - Fix assertion failure when calling dixSetPrivate (Closes: #632549).
+      Thanks, Mohammed Sameer!
+    - Fix memcpy abuse in the fb layer (Closes: #626682).
+
+ -- Cyril Brulebois <kibi@debian.org>  Sun, 28 Aug 2011 12:53:06 +0200
+
+xorg-server (2:1.10.99.901+git20110731-1) experimental; urgency=low
+
+  [ Cyril Brulebois ]
+  * New upstream release candidate.
+  * Bump serverminver, as well as input and video ABI.
+  * Adapt 15-nouveau.diff to cope with the glxdricommon-ification of
+    GLX probing. Nouveau users might still see an error (EE) mentioning
+    the fallback to software rendering.
+  * Bump pixman build-dep/dep to 0.21.8.
+  * Bump xutils-dev build-dep for new macros.
+  * Drop libglib2.0-dev build-dep, no longer needed for unit tests.
+  * Bump x11proto-fixes-dev build-dep for pointer barriers support.
+
+  [ Julien Cristau ]
+  * Update to git HEAD.
+    + DIX: Set backgroundState correctly for root window (Closes: #632134)
+  * Bump xproto, dri2proto and glproto build-dependencies.
+  * Merge packaging changes from the 1.10.x branch:
+    + Bump libgl1-mesa-dri versioned Recommends to 7.10.2-4, to lower the
+      odds of having a server built against multiarched mesa, installed
+      along a pre-multiarch mesa. The Breaks in mesa packages take care of
+      the other way round already.
+    + And since the server's binNMU managed to migrate to testing way too
+      early, add a Breaks against pre-multiarch libgl1-mesa-dri and
+      libgl1-mesa-dri-experimental.
+    + Bump Standards-Version to 3.9.2 (no changes).
+    + Add Breaks on drivers abandoned between lenny and squeeze.  This helps
+      apt decide to remove them instead of removing all of X.  Thanks, David
+      Kalnischkies!
+  * Drop obsolete 20-workaround-36986.diff.
+  * Fix patch stamp dependency.
+
+ -- Julien Cristau <jcristau@debian.org>  Sun, 31 Jul 2011 22:15:07 +0200
+
+xorg-server (2:1.10.2-1) unstable; urgency=low
+
+  * New upstream release.
+  * Add 20-workaround-36986.diff to avoid test failures on *i386.
+  * On GNU/kFreeBSD, enable HAL support for the main build, but disable it
+    for the udeb build, thanks to Robert Millan (Closes: #596586).
+
+ -- Cyril Brulebois <kibi@debian.org>  Mon, 30 May 2011 11:37:37 +0200
+
+xorg-server (2:1.10.1.901-1) experimental; urgency=low
+
+  * New upstream release (1.10.2 rc1):
+    - Comes with some Xi fixes.
+    - Comes with many GLX fixes.
+
+ -- Cyril Brulebois <kibi@debian.org>  Sat, 07 May 2011 13:27:28 +0200
+
+xorg-server (2:1.10.1-2) unstable; urgency=low
+
+  * Build xserver-xorg-core-udeb on hurd-i386.  Thanks, Samuel Thibault!
+  * Upload to unstable.
+
+ -- Julien Cristau <jcristau@debian.org>  Thu, 28 Apr 2011 13:28:58 +0200
+
+xorg-server (2:1.10.1-1) experimental; urgency=low
+
+  * New upstream release.
+
+ -- Cyril Brulebois <kibi@debian.org>  Tue, 19 Apr 2011 03:08:08 +0200
+
+xorg-server (2:1.10.0.902-1) experimental; urgency=low
+
+  * New upstream release (1.10.1 rc2).
+
+ -- Cyril Brulebois <kibi@debian.org>  Sat, 09 Apr 2011 04:18:28 +0200
+
+xorg-server (2:1.10.0.901-1) experimental; urgency=low
+
+  * New upstream release (1.10.1 rc1).
+  * Relax build-dep and dep on x11proto-randr-dev since the XRandR 1.4
+    bits were finally reverted upstream.
+  * Remove patch: 16-construct-paths-in-doxygen.conf.diff (merged
+    upstream).
+  * Pass --enable-xcsecurity to the main build to restore the XC-SECURITY
+    extension, thanks to Stefan Fritsch's report (Closes: #599657).
+
+ -- Cyril Brulebois <kibi@debian.org>  Wed, 30 Mar 2011 02:22:56 +0200
+
+xorg-server (2:1.9.99.903-1) experimental; urgency=low
+
+  * New upstream release candidate (1.10 rc3).
+  * Remove patch: 17-fix-ftbfs-on-sparc.diff (merged upstream).
+  * Remove patch: 20-update-gpu-pitch.diff (merged upstream).
+  * Refresh patch: 07-xfree86-fix-build-with-xv-disabled.diff
+  * Replace patch fixing out-of-tree-build:
+    - 16-oot-build.diff (dirty local hack).
+    + 16-construct-paths-in-doxygen.conf.diff (from upstream,
+      without the gitignore hunk to get patching working).
+  * Bump video ABI version, and serverminver accordingly.
+
+ -- Cyril Brulebois <kibi@debian.org>  Fri, 25 Feb 2011 15:22:39 +0100
+
+xorg-server (2:1.9.99.902-3) experimental; urgency=low
+
+  * Merge from master up to 93a7399370.
+  * New patch: 17-fix-ftbfs-on-sparc.diff; let's try it for real before
+    asking for its being merged upstream.
+  * Refresh all patches.
+
+ -- Cyril Brulebois <kibi@debian.org>  Wed, 23 Feb 2011 13:36:13 +0100
+
+xorg-server (2:1.9.99.902-2) experimental; urgency=low
+
+  * Bump dependency on x11proto-randr-dev, needed since xorg-server.pc
+    pulls a newer randrproto version.
+  * Merge from debian-unstable (picking packaging updates from 2:1.9.4-3).
+  * Mention some basic checks to perform when updating to a new upstream
+    release, in README.source: ABI bumps and SDK_REQUIRED_MODULES updates.
+  * Accordingly:
+    - Bump the x11proto-xext-dev dependency.
+    - Don't bump the x11proto-kb-dev dependency (even etch had a
+      sufficient version).
+
+ -- Cyril Brulebois <kibi@debian.org>  Sun, 20 Feb 2011 07:02:20 +0100
+
+xorg-server (2:1.9.99.902-1) experimental; urgency=low
+
+  [ Christopher James Halse Rogers ]
+  * New upstream release (1.10 rc1)
+  * Drop 16-xaa-fbcomposite-fix-negative-size.diff, the mod macro that this
+    patch fixes is no longer used.
+  * debian/control:
+    - Bump x11proto-randr-dev and x11proto-xext-dev build-deps to 1.3.99 and
+      7.1.99 for new XRandR and XSync extension protocols.
+
+  [ Julien Cristau ]
+  * Bump serverminver and ABI versions.
+
+  [ Cyril Brulebois ]
+  * New upstream release (1.10 rc2).
+  * bug script: Report libGL-related diversions.
+  * Bump serverminver again, since ABI_XINPUT_VERSION was bumped from 12.0
+    to 12.2.
+  * Update debian/copyright from upstream COPYING.
+  * Add patch to work around out-of-tree issues: 16-oot-build.diff
+
+ -- Cyril Brulebois <kibi@debian.org>  Sat, 19 Feb 2011 15:29:54 +0100
+
+xorg-server (2:1.9.4-3) unstable; urgency=low
+
+  * Maintainer script clean-up:
+    - xserver-xorg-core.preinst.in: Remove, 1.5 is long gone.
+    - xserver-xorg-core.postinst.in: Remove, 1.5 is long gone, and 1.7.4
+      was between lenny and squeeze.
+    - xserver-xorg-core.postrm.in: Rename as xserver-xorg-core.postrm,
+      handling upgrades from 1.5 is no longer needed, only keep the logs
+      removal and the #DEBHELPER# placeholder.
+  * Move remaining xsfbs bits to debian/rules:
+    - Create/clean stampdir/.
+    - Use quilt.make, $(QUILT_STAMPFN), unpatch.
+    - Define SOURCE_NAME and SOURCE_VERSION.
+  * Remove debian/xsfbs accordingly.
+  * Remove reference to xsfbs in README.source accordingly.
+  * Add patch: 20-update-gpu-pitch.diff (from upstream bug 33929), fixing
+    issues with the radeon driver (Closes: #613957).
+
+ -- Cyril Brulebois <kibi@debian.org>  Sun, 20 Feb 2011 05:35:50 +0100
+
+xorg-server (2:1.9.4-2) unstable; urgency=low
+
+  * Put an end to the dependency hell! Now that we have proper
+    dependencies between drivers and the server, remove xserver-xorg from
+    xserver-xorg-core's Depends (Closes: #362313). In a nutshell, one may
+    want to choose between installing:
+    - xserver-xorg-core: the server itself, with no strings attached.
+    - xserver-xorg: pulls the server and drivers, contains the X wrapper
+      and some documentation.
+    - xorg: pulls xserver-xorg as well as various X11 clients and fonts.
   * bug script: Report KMS configuration files and their contents.
   * bug script: Keep only one lspci call (with proper filtering), which
     makes PCI IDs come back.
-  * Merge from server-1.7-branch, fixing broken rotation with nvidia
-    driver (Closes: #611619):
-    - Revert "randr: check for virtual size limits before set crtc"
   * bug script: Report libGL-related diversions.
+  * Stop providing xorg-input-abi-11.0 and xorg-video-abi-8.0 now that
+    drivers have reached unstable.
+  * Merge server-1.9-branch up to 0a4b0de9af.
 
- -- Cyril Brulebois <kibi@debian.org>  Fri, 18 Feb 2011 14:21:12 +0100
+ -- Cyril Brulebois <kibi@debian.org>  Wed, 16 Feb 2011 23:17:07 +0100
 
-xorg-server (2:1.7.7-12) unstable; urgency=low
+xorg-server (2:1.9.4-1) unstable; urgency=low
 
-  * Cherry-pick this to fix crashes with MCE remotes (Closes: #609750):
-    - mi: handle DGA subtypes when determining the master device.
-  * Add 22-stop-searching-for-xf86config-files, cherry-picking the
-    upstream commit below (which we can't do directly since it depends on
-    a patch kept in the quilt series: 08-config-xorg-conf-d.diff), so that
-    XF86Config-4 is no longer considered (Closes: #610453). Thanks,
-    Bernhard R. Link!
-    - Stop searching for XF86Config files
+  * The “squeeze is released, target sid!” upload.
+  * New upstream release.
+  * Unfuzzy all patches.
+  * Get rid of long obsolete NEWS file.
+  * Replace “--remaining-packages” with “-Nfoo -Nbar” in the “dh_strip -s”
+    call, to avoid non-stripped binaries if the build is resumed.
+  * Use “dh_prep” instead of deprecated “dh_clean -k”.
+  * Bump debhelper build-dep accordingly.
+  * Introduce dh_xsf_substvars, to be used in driver packages to set
+    appropriate substitution variables for Depends and Provides, before
+    calling dh_gencontrol. Ship it in xserver-xorg-dev.
+  * Also ship a debhelper sequence: xsf.pm, to insert dh_xsf_substvars
+    before dh_gencontrol. Usage: “dh $@ --with xsf” when using dh.
+  * Get rid of inputabiver and videoabiver files, they've been deprecated
+    for a while, and drivers should all have switched by now.
+  * rules: Only read the first line of debian/serverminver to set the
+    serverminver variable, used to prepare xinputdep and videodrvdep
+    files.
+  * rules: Keep only the major ABI version from pkg-config's output to
+    build xorg-{input,video}-abi-$ABI. To handle minor ABI versions, we
+    have the serverminver mechanism.
+  * To avoid having to binNMU all drivers to update their Depends from
+    xorg-*-abi-$MAJOR-$MINOR to xorg-*-abi-$MAJOR, add xorg-video-abi-8.0
+    and xorg-input-abi-11.0 to the server's Provides temporarily (until
+    the next ABI bump).
+  * Add ${videoabi}, ${inputabi} to the udeb's Provides. There's no reason
+    for udebs to have loose dependencies.
+  * Accordingly, copy server's substvars as udeb's substvars once the
+    videoabi/inputabi variables are computed.
+  * Add an abibumpcheck target which checks for xinput and videodrv ABI
+    updates, based on the versions stored in debian/serverminver; make
+    clean depend on it to make sure such an update is noticed at the very
+    beginning of the build.
+  * Add current versions to debian/serverminver accordingly.
+  * Remove “xserver” from Provides, it's deprecated.
+  * Use architecture wildcards for build-deps.
+  * Make xserver-xfbdev linux-any; add armhf and powerpcspe to the udeb
+    (Closes: #585697, #605764).
+  * Cherry-pick, thanks to Samuel Thibault (Closes: #590715):
+    - xserver: enable TLS even if AIGLX is not enabled
+  * Update Uploaders list. Thanks, David & Steve & Brice!
+  * Bump Standards-Version to 3.9.1 (no changes needed).
+
+ -- Cyril Brulebois <kibi@debian.org>  Sat, 05 Feb 2011 10:40:55 +0100
+
+xorg-server (2:1.9.3.902-1) experimental; urgency=low
+
+  * New upstream release (1.9.4 rc2).
   * Improve bug script:
     - Stop reporting about roster and checksum for config file and server
       symlink, they are no longer used.
@@ -34,114 +498,127 @@ xorg-server (2:1.7.7-12) unstable; urgency=low
       still exist in some cases, and be referenced in /etc/ld.so.conf, so
       using ldd is sufficient to find out, see #546836 for an example).
 
- -- Cyril Brulebois <kibi@debian.org>  Sat, 29 Jan 2011 14:29:50 +0100
+ -- Cyril Brulebois <kibi@debian.org>  Mon, 31 Jan 2011 14:00:41 +0100
 
-xorg-server (2:1.7.7-11) unstable; urgency=low
+xorg-server (2:1.9.3.901-1) experimental; urgency=low
 
-  * Merge server-1.7-branch from upstream:
-    - xfree86/modes: Take rotation into account when checking mode size
-    - randr: check for virtual size limits before set crtc
-    - EXA: Fix crash with fill using 1x1 tile of depth < 8 (bug #24703).
-    - Add EDID quirk for HP Compaq nc8430.
-    - x86emu: Fix more mis-decoding of the data prefix
-    - x86emu: fix jump_near_IMM to handle DATA: flag correctly.
-    - Add and use SERVER_SYNC_*_VERSION
-    - render: Fix byteswapping of gradient stops
-  * Drop patch accordingly: 22-render-swap-stops.diff
+  * New upstream release (1.9.4 rc1).
 
- -- Cyril Brulebois <kibi@debian.org>  Wed, 12 Jan 2011 01:20:21 +0100
+ -- Cyril Brulebois <kibi@debian.org>  Sun, 09 Jan 2011 03:10:13 +0100
 
-xorg-server (2:1.7.7-10) unstable; urgency=low
+xorg-server (2:1.9.2.902-1) experimental; urgency=low
 
-  * render: Fix byteswapping of gradient stops
-  * Cherry-pick from upstream:
-    - Xi: reset the known properties at each server generation
-    - xfree86: apply gamma settings on EnterVT.
-    - xfree86: store the screen's gamma information on init.
-    - fix screen number checks
-  * Refresh patches.
+  * New upstream release (1.9.3 rc2).
+  * Drop 06_dont_trap_access_to_timer_and_keyboard.diff, merged upstream.
 
- -- Julien Cristau <jcristau@debian.org>  Thu, 02 Dec 2010 00:39:50 +0100
+ -- Cyril Brulebois <kibi@debian.org>  Sun, 05 Dec 2010 02:16:14 +0100
 
-xorg-server (2:1.7.7-9) unstable; urgency=low
+xorg-server (2:1.9.2-1) experimental; urgency=low
 
-  * The "Hello RHEL6" upload.
+  * New upstream release.
 
-  * Stolen from RHEL6: only list the device mode in XIQueryDevice, not the
-    proximity bit.
-  * Cherry-pick a bunch more patches from upstream (most seen in RHEL6):
-    - os: Return BadLength instead of disconnecting BigReq clients
-    - dix: Default DPMS timeout values to match screensaver values
-    - fix a sign problem with valuator data
-    - Revert "dix: use the event mask of the grab for TryClientEvents."
-    - rotation: fix cursor and overlap of one pixel
-    - Xi: don't copy the modifier key count when copying device classes
-    - randr: prevent an unnecessary screen resize with multiple displays
-    - Change keyboard controls on slave keyboards
-    - Don't coredump on "X -showopts"
-    - xkb: Fix omissions in geometry initialization
-    - ddc: Don't probe for DDC/CI or EEPROM
+ -- Cyril Brulebois <kibi@debian.org>  Wed, 10 Nov 2010 00:10:19 +0100
 
- -- Julien Cristau <jcristau@debian.org>  Fri, 12 Nov 2010 00:39:18 +0100
+xorg-server (2:1.9.0.902-1) experimental; urgency=low
 
-xorg-server (2:1.7.7-8) unstable; urgency=low
+  * New upstream release (1.9.1 rc2).
+  * Drop 20-Revert-for-bug-30267.diff, merged upstream.
 
-  * Pass --enable-xcsecurity to the main build to restore the XC-SECURITY
-    extension, thanks to Stefan Fritsch's report (Closes: #599657).
+ -- Cyril Brulebois <kibi@debian.org>  Sat, 16 Oct 2010 15:24:48 +0200
 
- -- Cyril Brulebois <kibi@debian.org>  Sun, 10 Oct 2010 12:43:51 +0200
+xorg-server (2:1.9.0.901-1) experimental; urgency=low
 
-xorg-server (2:1.7.7-7) unstable; urgency=low
-
-  * Use linux-any instead of a list of architecture names for restrictions of
-    build-dependencies (closes: #594927).
-  * Add a couple patches by Chris Wilson to avoid crashing in RandR if the
-    driver changes the screen pixmap on resize.
-
- -- Julien Cristau <jcristau@debian.org>  Mon, 20 Sep 2010 15:26:56 +0200
-
-xorg-server (2:1.7.7-6) unstable; urgency=low
-
-  * Unwrap/rewrap EnterVT/LeaveVT completely.  Because some EnterVT code needs
-    to remove itself from the call chain, we need to fix all of the wrappers
-    to correctly unwrap/rewrap during the call chain.  Followup to the fix in
-    the previous upload, pointed out and tested by Sven Joachim, thanks!
-    (closes: #596012, #595973, #595776)
-
- -- Julien Cristau <jcristau@debian.org>  Wed, 08 Sep 2010 19:06:02 +0200
-
-xorg-server (2:1.7.7-5) unstable; urgency=low
-
-  [ Julien Cristau ]
-  * Clean up RandR12 bits on screen close.  Avoids infinite recursion on
-    EnterVT in the second server generation (closes: #595386).
+  [ Christopher James Halse Rogers ]
+  * New upstream release (1.9.0):
+    - Fixes crash in DamageUnregister on session close (LP: #343694)
+    - Fixes crash with extremely large windows exposed by xpdf (Closes: #320627)
+  * Drop 17-fix-DRI2-segfault-when-clientGone.diff: fixed upstream in more
+    generality.
 
   [ Cyril Brulebois ]
-  * Upload to unstable.
+  * New upstream release (1.9.1 rc1).
+  * Add patch: 20-Revert-for-bug-30267.diff, to fix FTBFS due to test
+    failures, see https://bugs.freedesktop.org/show_bug.cgi?id=30267 for
+    reference.
+  * Bump xutils-dev build-dep for new macros.
+  * Remove --disable-multibuffer from configure flags, that extension is
+    gone for real now.
 
- -- Cyril Brulebois <kibi@debian.org>  Sat, 04 Sep 2010 18:57:55 +0200
+ -- Cyril Brulebois <kibi@debian.org>  Tue, 12 Oct 2010 22:13:20 +0200
 
-xorg-server (2:1.7.7-4) unstable; urgency=low
+xorg-server (2:1.8.99.905-1) experimental; urgency=low
 
-  * Set default xkb rules to evdev on linux, to work around a wrong default in
-    configure.ac and an Xorg issue where it reverts to the default on reset.
-    Thanks to Bastian Blank for the report.
-  * Pull from server-1.7-nominations (commit 4c313472)
-    - fb: make isClipped always reject negative coordinates (closes: #320627)
+  * Drop recommends on xbase-clients.
+  * Add xauth to xserver-common recommends.
+  * Bump Standards-Version to 3.9.0.
+  * Don't install serverminver, drivers shouldn't use this anymore.
+  * New upstream release candidate.
 
- -- Julien Cristau <jcristau@debian.org>  Tue, 24 Aug 2010 16:03:30 +0200
+ -- Julien Cristau <jcristau@debian.org>  Sat, 17 Jul 2010 11:13:32 +0100
 
-xorg-server (2:1.7.7-3) unstable; urgency=low
+xorg-server (2:1.8.99.904-1) experimental; urgency=low
 
   [ Julien Cristau ]
-  * Drop lpia from the control file, it's dead.
-  * Add Breaks on drivers abandoned between lenny and squeeze.  This helps apt
-    decide to remove them instead of removing all of X.  Thanks, David
-    Kalnischkies!
-  * Add patch from Dave Airlie to fix crash in composite on allocation
-    failure (closes: #588046).
+  * Install the upstream changelog in xserver-common, instead of duplicating
+    its 1MB in all other packages.
+  * Stop repacking the tarball: the non-modifiable README.DRI was removed
+    upstream.
+  * Bump build-deps on x11proto-core-dev, x11proto-dri2-dev, libxfont-dev.
+  * Bump xserver-xorg-dev dependency on x11proto-core-dev and
+    x11proto-dri2-dev, add dependency on x11proto-xinerama-dev.
+  * Bump serverminver, videoabiver, inputabiver.
 
- -- Cyril Brulebois <kibi@debian.org>  Thu, 15 Jul 2010 16:57:44 +0200
+  [ Christopher James Halse Rogers ]
+  * New upstream RC
+    - A number of DRI2 fixes.
+    - Fix for hanging OpenGL clients with multiple heads.
+  * 17-fix-DRI2-segfault-when-clientGone.diff:
+    - Pick up fix from https://bugs.freedesktop.org/show_bug.cgi?id=27497 to
+      fix server crash in DRI2SwapEvent handling (LP: #595182).
+
+ -- Julien Cristau <jcristau@debian.org>  Fri, 09 Jul 2010 12:45:09 +0100
+
+xorg-server (2:1.8.1.901-1) experimental; urgency=low
+
+  [ Julien Cristau ]
+  * New upstream release
+  * Merge changes from 2:1.7.7-2.
+
+  [ Christopher James Halse Rogers ]
+  * 16-xaa-fbcomposite-fix-negative-size.diff:
+    - mi hunk merged upstream.  Update to keep just the fbpict.c hunk.
+
+ -- Julien Cristau <jcristau@debian.org>  Mon, 07 Jun 2010 23:22:48 +0200
+
+xorg-server (2:1.8.1-1) experimental; urgency=low
+
+  * New upstream release
+    - 02_Add-libgcrypt-and-libnettle-as-options-for-sha1.diff: partly merged
+      upstream, rest renamed to 02_Add-libnettle-as-option-for-sha1.diff and
+      ported to new version
+    - 05_only_call_gamma_set_if_nonnull.diff: merged upstream
+    - 07-xfree86-fix-build-with-xv-disabled.diff: rediffed
+    - 08-config-xorg-conf-d.diff: merged upstream
+    - 09-inputclass-sans-abi9.diff: likewise
+    - 10-config-libudev-backend.diff: likewise
+    - 11-xfree86-fix-video-fallback.diff: likewise
+    - 12-xfree86-dont-complain-about-missing-coredevices.diff: likewise
+    - 13-unbreak-input-abi.diff: obsolete
+    - 14-tone-down-nidr-errors.diff: merged upstream
+    - 15-nouveau.diff: rediffed
+    - 17-xfree86-saner-conf-search-paths.diff: merged upstream
+    - 18-Add-10-evdev.conf.diff: likewise
+  * Bump xutils-dev build-dep for new macros.
+  * Add build-dep on xfonts-utils for fontutil.pc.
+  * Bump build-deps on mesa, glproto and dri2proto.
+  * Drop obsolete configure options --disable-xsdl and
+    --disable-null-root-cursor.
+  * --enable-werror has been replaced by --enable-strict-compilation, adjust
+    rules.
+  * xdmx-tools.install: xdmx was renamed to dmxinfo.
+  * Bump debian/serverminver and ABI versions.
+
+ -- Julien Cristau <jcristau@debian.org>  Wed, 12 May 2010 18:01:39 +0200
 
 xorg-server (2:1.7.7-2) unstable; urgency=low
 

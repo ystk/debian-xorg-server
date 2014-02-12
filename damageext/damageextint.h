@@ -38,33 +38,34 @@
 #include "selection.h"
 #include "scrnintstr.h"
 #include "damageext.h"
-#include "damage.h" 
+#include "damage.h"
 #include "xfixes.h"
 
 typedef struct _DamageClient {
-    CARD32	major_version;
-    CARD32	minor_version;
-    int		critical;
+    CARD32 major_version;
+    CARD32 minor_version;
+    int critical;
 } DamageClientRec, *DamageClientPtr;
 
 #define GetDamageClient(pClient) ((DamageClientPtr)dixLookupPrivate(&(pClient)->devPrivates, DamageClientPrivateKey))
 
 typedef struct _DamageExt {
-    DamagePtr		pDamage;
-    DrawablePtr		pDrawable;
-    DamageReportLevel	level;
-    ClientPtr		pClient;
-    XID			id;
+    DamagePtr pDamage;
+    DrawablePtr pDrawable;
+    DamageReportLevel level;
+    ClientPtr pClient;
+    XID id;
+    XID drawable;
 } DamageExtRec, *DamageExtPtr;
 
 #define VERIFY_DAMAGEEXT(pDamageExt, rid, client, mode) { \
     int rc = dixLookupResourceByType((pointer *)&(pDamageExt), rid, \
                                      DamageExtType, client, mode); \
     if (rc != Success) \
-        return (rc == BadValue) ? DamageErrorBase + BadDamage : rc; \
+        return rc; \
 }
 
 void
-DamageExtSetCritical (ClientPtr pClient, Bool critical);
+ DamageExtSetCritical(ClientPtr pClient, Bool critical);
 
-#endif /* _DAMAGEEXTINT_H_ */
+#endif                          /* _DAMAGEEXTINT_H_ */

@@ -32,7 +32,7 @@
  */
 
 /** \file
- * Provide configuration #define's and #undef's to build Xdmx in X.Org's
+ * Provide configuration define's and undef's to build Xdmx in X.Org's
  * modular source tree.
  */
 
@@ -72,4 +72,4 @@
 /* Enable the DMX extension */
 #define DMXEXT
 
-#endif /* DMX_CONFIG_H */
+#endif                          /* DMX_CONFIG_H */

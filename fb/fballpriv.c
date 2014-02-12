@@ -26,47 +26,42 @@
 
 #include "fb.h"
 
-#ifdef FB_SCREEN_PRIVATE
-static int fbScreenPrivateKeyIndex;
-static DevPrivateKey fbScreenPrivateKey = &fbScreenPrivateKeyIndex;
-DevPrivateKey fbGetScreenPrivateKey(void)
+static DevPrivateKeyRec fbScreenPrivateKeyRec;
+DevPrivateKey
+fbGetScreenPrivateKey(void)
 {
-    return fbScreenPrivateKey;
-}
-#endif
-
-static int fbGCPrivateKeyIndex;
-static DevPrivateKey fbGCPrivateKey = &fbGCPrivateKeyIndex;
-DevPrivateKey fbGetGCPrivateKey(void)
-{
-    return fbGCPrivateKey;
+    return &fbScreenPrivateKeyRec;
 }
 
-static int fbWinPrivateKeyIndex;
-static DevPrivateKey fbWinPrivateKey = &fbWinPrivateKeyIndex;
-DevPrivateKey fbGetWinPrivateKey(void)
+static DevPrivateKeyRec fbGCPrivateKeyRec;
+DevPrivateKey
+fbGetGCPrivateKey(void)
 {
-    return fbWinPrivateKey;
+    return &fbGCPrivateKeyRec;
+}
+
+static DevPrivateKeyRec fbWinPrivateKeyRec;
+DevPrivateKey
+fbGetWinPrivateKey(void)
+{
+    return &fbWinPrivateKeyRec;
 }
 
 Bool
 fbAllocatePrivates(ScreenPtr pScreen, DevPrivateKey *pGCKey)
 {
     if (pGCKey)
-	*pGCKey = fbGCPrivateKey;
-    
-    if (!dixRequestPrivate(fbGCPrivateKey, sizeof(FbGCPrivRec)))
-	return FALSE;
-#ifdef FB_SCREEN_PRIVATE
-    {
-	FbScreenPrivPtr	pScreenPriv;
+        *pGCKey = &fbGCPrivateKeyRec;
 
-	pScreenPriv = (FbScreenPrivPtr) xalloc (sizeof (FbScreenPrivRec));
-	if (!pScreenPriv)
-	    return FALSE;
-	dixSetPrivate(&pScreen->devPrivates, fbScreenPrivateKey, pScreenPriv);
-    }
-#endif
+    if (!dixRegisterPrivateKey
+        (&fbGCPrivateKeyRec, PRIVATE_GC, sizeof(FbGCPrivRec)))
+        return FALSE;
+    if (!dixRegisterPrivateKey
+        (&fbScreenPrivateKeyRec, PRIVATE_SCREEN, sizeof(FbScreenPrivRec)))
+        return FALSE;
+    if (!dixRegisterPrivateKey(&fbWinPrivateKeyRec, PRIVATE_WINDOW, 0))
+        return FALSE;
+
     return TRUE;
 }
 

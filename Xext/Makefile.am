@@ -15,7 +15,7 @@ INCLUDES = -I$(top_srcdir)/hw/xfree86/dixmods/extmod
 AM_CFLAGS = $(DIX_CFLAGS)
 
 if XORG
-sdk_HEADERS = xvdix.h xvmcext.h geext.h geint.h shmint.h
+sdk_HEADERS = xvdix.h xvmcext.h geext.h geint.h shmint.h syncsdk.h
 endif
 
 # Sources always included in libXextbuiltin.la & libXext.la
@@ -26,6 +26,7 @@ BUILTIN_SRCS =			\
 	sleepuntil.c		\
 	sleepuntil.h		\
 	sync.c			\
+	syncsdk.h		\
 	syncsrv.h		\
 	xcmisc.c		\
 	xtest.c
@@ -81,7 +82,7 @@ endif
 
 # SELinux extension: provides SELinux policy support for X objects
 # requires X-ACE extension
-XSELINUX_SRCS = xselinux.c xselinux.h
+XSELINUX_SRCS = xselinux_ext.c xselinux_hooks.c xselinux_label.c xselinux.h xselinuxint.h
 if XSELINUX
 MODULE_SRCS += $(XSELINUX_SRCS)
 MODULE_LIBS += $(SELINUX_LIBS)
@@ -93,21 +94,8 @@ if XCSECURITY
 BUILTIN_SRCS += $(XCSECURITY_SRCS)
 endif
 
-XCALIBRATE_SRCS = xcalibrate.c
-if XCALIBRATE
-BUILTIN_SRCS += $(XCALIBRATE_SRCS)
-# XCalibrate needs tslib
-endif
-
-# Multi-buffering extension
-MULTIBUFFER_SRCS = mbuf.c
-EXTRA_MULTIBUFFER_SRCS = mbufbf.c mbufpx.c
-if MULTIBUFFER
-MODULE_SRCS  += $(MULTIBUFFER_SRCS)
-endif
-
 # XF86 Big Font extension
-BIGFONT_SRCS = xf86bigfont.c
+BIGFONT_SRCS = xf86bigfont.c xf86bigfontsrv.h
 if XF86BIGFONT
 BUILTIN_SRCS += $(BIGFONT_SRCS)
 endif
@@ -137,11 +125,8 @@ EXTRA_DIST = \
 	$(SCREENSAVER_SRCS) \
 	$(XACE_SRCS) \
 	$(XCSECURITY_SRCS) \
-	$(XCALIBRATE_SRCS) \
+	$(XSELINUX_SRCS) \
 	$(XINERAMA_SRCS) \
-	$(MULTIBUFFER_SRCS) \
-	$(EXTRA_MULTIBUFFER_SRCS) \
-	$(FONTCACHE_SRCS) \
 	$(BIGFONT_SRCS) \
 	$(DPMS_SRCS) \
         $(GE_SRCS)

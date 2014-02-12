@@ -4,6 +4,7 @@
  * External interface of the Quartz display modes seen by the generic, mode
  * independent parts of the Darwin X server.
  *
+ * Copyright (c) 2002-2012 Apple Inc. All rights reserved.
  * Copyright (c) 2001-2003 Greg Parker and Torrey T. Lyons.
  *                 All Rights Reserved.
  *
@@ -35,10 +36,11 @@
 
 #include "screenint.h"
 #include "window.h"
+#include "pixmap.h"
 
 /*------------------------------------------
    Quartz display mode function types
-  ------------------------------------------*/
+   ------------------------------------------*/
 
 /*
  * Display mode initialization
@@ -62,13 +64,14 @@ typedef void (*ResumeScreenProc)(ScreenPtr pScreen);
 /*
  * Screen state change support
  */
-typedef void (*AddPseudoramiXScreensProc)(int *x, int *y, int *width, int *height);
+typedef void (*AddPseudoramiXScreensProc)
+    (int *x, int *y, int *width, int *height, ScreenPtr pScreen);
 typedef void (*UpdateScreenProc)(ScreenPtr pScreen);
 
 /*
  * Rootless helper functions
  */
-typedef Bool (*IsX11WindowProc)(void *nsWindow, int windowNumber);
+typedef Bool (*IsX11WindowProc)(int windowNumber);
 typedef void (*HideWindowsProc)(Bool hide);
 
 /*
@@ -78,12 +81,12 @@ typedef void * (*FrameForWindowProc)(WindowPtr pWin, Bool create);
 typedef WindowPtr (*TopLevelParentProc)(WindowPtr pWindow);
 typedef Bool (*CreateSurfaceProc)
     (ScreenPtr pScreen, Drawable id, DrawablePtr pDrawable,
-     unsigned int client_id, unsigned int *surface_id,
-     unsigned int key[2], void (*notify) (void *arg, void *data),
-     void *notify_data);
+    unsigned int client_id, unsigned int *surface_id,
+    unsigned int key[2], void (*notify)(void *arg, void *data),
+    void *notify_data);
 typedef Bool (*DestroySurfaceProc)
     (ScreenPtr pScreen, Drawable id, DrawablePtr pDrawable,
-     void (*notify) (void *arg, void *data), void *notify_data);
+    void (*notify)(void *arg, void *data), void *notify_data);
 
 /*
  * Quartz display mode function list
@@ -112,24 +115,49 @@ typedef struct _QuartzModeProcs {
 } QuartzModeProcsRec, *QuartzModeProcsPtr;
 
 extern QuartzModeProcsPtr quartzProcs;
-extern int quartzHasRoot, quartzEnableRootless;
 
-Bool QuartzAddScreen(int index, ScreenPtr pScreen);
-Bool QuartzSetupScreen(int index, ScreenPtr pScreen);
-void QuartzInitOutput(int argc,char **argv);
-void QuartzInitInput(int argc, char **argv);
-void QuartzInitServer(int argc, char **argv, char **envp);
-void QuartzGiveUp(void);
-void QuartzProcessEvent(xEvent *xe);
-void QuartzUpdateScreens(void);
+extern Bool XQuartzFullscreenVisible; /* Are the windows visible (predicated on !rootless) */
+extern Bool XQuartzServerVisible;     /* Is the server visible ... TODO: Refactor to "active" */
+extern Bool XQuartzEnableKeyEquivalents;
+extern Bool XQuartzRootlessDefault;  /* Is our default mode rootless? */
+extern Bool XQuartzIsRootless;       /* Is our current mode rootless (or FS)? */
+extern Bool XQuartzFullscreenMenu;   /* Show the menu bar (autohide) while in FS */
+extern Bool XQuartzFullscreenDisableHotkeys;
+extern Bool XQuartzOptionSendsAlt;   /* Alt or Mode_switch? */
 
-void QuartzShow(void);
-void QuartzHide(void);
-void QuartzSetRootClip(BOOL enable);
-void QuartzSpaceChanged(uint32_t space_id);
+extern int32_t XQuartzShieldingWindowLevel; /* CGShieldingWindowLevel() or 0 */
 
-void QuartzSetFullscreen(Bool state);
-void QuartzSetRootless(Bool state);
+Bool
+QuartzAddScreen(int index, ScreenPtr pScreen);
+Bool
+QuartzSetupScreen(int index, ScreenPtr pScreen);
+void
+QuartzInitOutput(int argc, char **argv);
+void
+QuartzInitInput(int argc, char **argv);
+void
+QuartzInitServer(int argc, char **argv, char **envp);
+void
+QuartzGiveUp(void);
+void
+QuartzProcessEvent(xEvent *xe);
+void
+QuartzUpdateScreens(void);
 
-int server_main(int argc, char **argv, char **envp);
+void
+QuartzShow(void);
+void
+QuartzHide(void);
+void
+QuartzSetRootClip(BOOL enable);
+void
+QuartzSpaceChanged(uint32_t space_id);
+
+void
+QuartzSetRootless(Bool state);
+void
+QuartzShowFullscreen(Bool state);
+
+int
+server_main(int argc, char **argv, char **envp);
 #endif

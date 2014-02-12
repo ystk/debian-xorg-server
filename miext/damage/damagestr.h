@@ -30,60 +30,56 @@
 #include "damage.h"
 #include "gcstruct.h"
 #include "privates.h"
-#ifdef RENDER
-# include "picturestr.h"
-#endif
+#include "picturestr.h"
 
 typedef struct _damage {
-    DamagePtr		pNext;
-    DamagePtr		pNextWin;
-    RegionRec		damage;
-    
-    DamageReportLevel	damageLevel;
-    Bool		isInternal;
-    void		*closure;
-    Bool		isWindow;
-    DrawablePtr		pDrawable;
-    
-    DamageReportFunc	damageReport;
-    DamageReportFunc	damageReportPostRendering;
-    DamageDestroyFunc	damageDestroy;
-    DamageMarkerFunc	damageMarker;
+    DamagePtr pNext;
+    DamagePtr pNextWin;
+    RegionRec damage;
 
-    Bool		reportAfter;
-    RegionRec		pendingDamage; /* will be flushed post submission at the latest */
-    RegionRec		backupDamage; /* for use with damageMarker */
-    ScreenPtr		pScreen;
-    PrivateRec		*devPrivates;
+    DamageReportLevel damageLevel;
+    Bool isInternal;
+    void *closure;
+    Bool isWindow;
+    DrawablePtr pDrawable;
+
+    DamageReportFunc damageReport;
+    DamageReportFunc damageReportPostRendering;
+    DamageDestroyFunc damageDestroy;
+    DamageMarkerFunc damageMarker;
+
+    Bool reportAfter;
+    RegionRec pendingDamage;    /* will be flushed post submission at the latest */
+    RegionRec backupDamage;     /* for use with damageMarker */
+    ScreenPtr pScreen;
+    PrivateRec *devPrivates;
 } DamageRec;
 
 typedef struct _damageScrPriv {
-    int				internalLevel;
+    int internalLevel;
 
     /*
      * For DDXen which don't provide GetScreenPixmap, this provides
      * a place to hook damage for windows on the screen
      */
-    DamagePtr			pScreenDamage;
+    DamagePtr pScreenDamage;
 
-    CopyWindowProcPtr		CopyWindow;
-    CloseScreenProcPtr		CloseScreen;
-    CreateGCProcPtr		CreateGC;
-    DestroyPixmapProcPtr	DestroyPixmap;
-    SetWindowPixmapProcPtr	SetWindowPixmap;
-    DestroyWindowProcPtr	DestroyWindow;
-#ifdef RENDER
-    CompositeProcPtr		Composite;
-    GlyphsProcPtr		Glyphs;
-    AddTrapsProcPtr		AddTraps;
-#endif
+    CopyWindowProcPtr CopyWindow;
+    CloseScreenProcPtr CloseScreen;
+    CreateGCProcPtr CreateGC;
+    DestroyPixmapProcPtr DestroyPixmap;
+    SetWindowPixmapProcPtr SetWindowPixmap;
+    DestroyWindowProcPtr DestroyWindow;
+    CompositeProcPtr Composite;
+    GlyphsProcPtr Glyphs;
+    AddTrapsProcPtr AddTraps;
 
     /* Table of wrappable function pointers */
-    DamageScreenFuncsRec	funcs;
+    DamageScreenFuncsRec funcs;
 } DamageScrPrivRec, *DamageScrPrivPtr;
 
 typedef struct _damageGCPriv {
-    GCOps   *ops;
+    GCOps *ops;
     GCFuncs *funcs;
 } DamageGCPrivRec, *DamageGCPrivPtr;
 
@@ -115,4 +111,4 @@ typedef struct _damageGCPriv {
 #define damageSetWinPriv(pWin,d) \
     dixSetPrivate(&(pWin)->devPrivates, damageWinPrivateKey, d)
 
-#endif /* _DAMAGESTR_H_ */
+#endif                          /* _DAMAGESTR_H_ */

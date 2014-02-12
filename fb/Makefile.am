@@ -1,9 +1,5 @@
 noinst_LTLIBRARIES = libfb.la libwfb.la
 
-INCLUDES = \
-	-I$(top_srcdir)/hw/xfree86/os-support \
-	-I$(top_srcdir)/hw/xfree86/os-support/bus \
-	-I$(top_srcdir)/hw/xfree86/common
 AM_CFLAGS = $(DIX_CFLAGS)
 
 if XORG
@@ -11,8 +7,10 @@ sdk_HEADERS = fb.h fbrop.h fboverlay.h wfbrename.h fbpict.h
 endif
 
 libfb_la_CFLAGS = $(AM_CFLAGS)
+libfb_la_LIBADD = $(PIXMAN_LIBS)
 
 libwfb_la_CFLAGS = $(AM_CFLAGS) -DFB_ACCESS_WRAPPER
+libwfb_la_LIBADD = $(PIXMAN_LIBS)
 
 libfb_la_SOURCES = 	\
 	fb.h		\
@@ -53,4 +51,4 @@ libfb_la_SOURCES = 	\
 
 libwfb_la_SOURCES = $(libfb_la_SOURCES)
 
-EXTRA_DIST = fbcmap.c fbcmap_mi.c
+EXTRA_DIST = fbcmap_mi.c
