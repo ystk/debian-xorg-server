@@ -2,6 +2,7 @@
  *
  * Quartz-specific support for the Darwin X Server
  *
+ * Copyright (c) 2002-2012 Apple Inc. All rights reserved.
  * Copyright (c) 2001-2004 Greg Parker and Torrey T. Lyons.
  *                 All Rights Reserved.
  *
@@ -35,6 +36,7 @@
 #endif
 
 #include "quartzCommon.h"
+#include "quartzRandR.h"
 #include "inputstr.h"
 #include "quartz.h"
 #include "darwin.h"
@@ -46,7 +48,6 @@
 #include "X11Application.h"
 
 #include <X11/extensions/applewmconst.h>
-#include <X11/extensions/randr.h>
 
 // X headers
 #include "scrnintstr.h"
@@ -56,73 +57,58 @@
 #include "mi.h"
 
 // System headers
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <IOKit/pwr_mgt/IOPMLib.h>
+#include <libkern/OSAtomic.h>
+#include <signal.h>
 
 #include <rootlessCommon.h>
 #include <Xplugin.h>
 
-#define FAKE_RANDR 1
-
-// Shared global variables for Quartz modes
-int                     quartzEventWriteFD = -1;
-int                     quartzUseSysBeep = 0;
-int                     quartzUseAGL = 1;
-int                     quartzEnableKeyEquivalents = 1;
-int                     quartzServerVisible = FALSE;
-int                     quartzServerQuitting = FALSE;
-static int              quartzScreenKeyIndex;
-DevPrivateKey           quartzScreenKey = &quartzScreenKeyIndex;
-int                     aquaMenuBarHeight = 0;
-QuartzModeProcsPtr      quartzProcs = NULL;
-const char             *quartzOpenGLBundle = NULL;
-int                     quartzFullscreenDisableHotkeys = TRUE;
-int                     quartzOptionSendsAlt = FALSE;
-
-#if defined(RANDR) && !defined(FAKE_RANDR)
-Bool QuartzRandRGetInfo (ScreenPtr pScreen, Rotation *rotations) {
-  return FALSE;
-}
-
-Bool QuartzRandRSetConfig (ScreenPtr           pScreen,
-			       Rotation            randr,
-			       int                 rate,
-			       RRScreenSizePtr     pSize) {
-  return FALSE;
-}
-
-Bool QuartzRandRInit (ScreenPtr pScreen) {
-  rrScrPrivPtr    pScrPriv;
-    
-  if (!RRScreenInit (pScreen)) return FALSE;
-
-  pScrPriv = rrGetScrPriv(pScreen);
-  pScrPriv->rrGetInfo = QuartzRandRGetInfo;
-  pScrPriv->rrSetConfig = QuartzRandRSetConfig;
-  return TRUE;
-}
+/* Work around a bug on Leopard's headers */
+#if defined (__LP64__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 && MAC_OS_X_VERSION_MAX_ALLOWED < 1060
+extern OSErr UpdateSystemActivity(UInt8 activity);
+#define OverallAct 0
 #endif
 
+DevPrivateKeyRec quartzScreenKeyRec;
+int aquaMenuBarHeight = 0;
+QuartzModeProcsPtr quartzProcs = NULL;
+const char             *quartzOpenGLBundle = NULL;
+
+Bool XQuartzFullscreenDisableHotkeys = TRUE;
+Bool XQuartzOptionSendsAlt = FALSE;
+Bool XQuartzEnableKeyEquivalents = TRUE;
+Bool XQuartzFullscreenVisible = FALSE;
+Bool XQuartzRootlessDefault = TRUE;
+Bool XQuartzIsRootless = TRUE;
+Bool XQuartzServerVisible = FALSE;
+Bool XQuartzFullscreenMenu = FALSE;
+
+int32_t XQuartzShieldingWindowLevel = 0;
+
 /*
-===========================================================================
+   ===========================================================================
 
- Screen functions
+   Screen functions
 
-===========================================================================
-*/
+   ===========================================================================
+ */
 
 /*
  * QuartzAddScreen
  *  Do mode dependent initialization of each screen for Quartz.
  */
-Bool QuartzAddScreen(
-    int index,
-    ScreenPtr pScreen)
+Bool
+QuartzAddScreen(int index,
+                ScreenPtr pScreen)
 {
     // allocate space for private per screen Quartz specific storage
-    QuartzScreenPtr displayInfo = xcalloc(sizeof(QuartzScreenRec), 1);
+    QuartzScreenPtr displayInfo = calloc(sizeof(QuartzScreenRec), 1);
 
     // QUARTZ_PRIV(pScreen) = displayInfo;
     dixSetPrivate(&pScreen->devPrivates, quartzScreenKey, displayInfo);
@@ -131,59 +117,80 @@ Bool QuartzAddScreen(
     return quartzProcs->AddScreen(index, pScreen);
 }
 
-
 /*
  * QuartzSetupScreen
  *  Finalize mode specific setup of each screen.
  */
-Bool QuartzSetupScreen(
-    int index,
-    ScreenPtr pScreen)
+Bool
+QuartzSetupScreen(int index,
+                  ScreenPtr pScreen)
 {
     // do Quartz mode specific setup
-    if (! quartzProcs->SetupScreen(index, pScreen))
+    if (!quartzProcs->SetupScreen(index, pScreen))
         return FALSE;
 
     // setup cursor support
-    if (! quartzProcs->InitCursor(pScreen))
+    if (!quartzProcs->InitCursor(pScreen))
         return FALSE;
+
+#if defined(RANDR)
+    if (!QuartzRandRInit(pScreen)) {
+        DEBUG_LOG("Failed to init RandR extension.\n");
+        return FALSE;
+    }
+#endif
 
     return TRUE;
 }
-
 
 /*
  * QuartzInitOutput
  *  Quartz display initialization.
  */
-void QuartzInitOutput(
-    int argc,
-    char **argv )
+void
+QuartzInitOutput(int argc,
+                 char **argv)
 {
+    /* For XQuartz, we want to just use the default signal handler to work better with CrashTracer */
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+#ifdef SIGEMT
+    signal(SIGEMT, SIG_DFL);
+#endif
+    signal(SIGFPE, SIG_DFL);
+#ifdef SIGBUS
+    signal(SIGBUS, SIG_DFL);
+#endif
+#ifdef SIGSYS
+    signal(SIGSYS, SIG_DFL);
+#endif
+#ifdef SIGXCPU
+    signal(SIGXCPU, SIG_DFL);
+#endif
+#ifdef SIGXFSZ
+    signal(SIGXFSZ, SIG_DFL);
+#endif
+
     if (!RegisterBlockAndWakeupHandlers(QuartzBlockHandler,
                                         QuartzWakeupHandler,
-                                        NULL))
-    {
+                                        NULL)) {
         FatalError("Could not register block and wakeup handlers.");
     }
 
-#if defined(RANDR) && !defined(FAKE_RANDR)
-    if(!QuartzRandRInit(pScreen))
-        FatalError("Failed to init RandR extension.\n");
-#endif
+    if (!dixRegisterPrivateKey(&quartzScreenKeyRec, PRIVATE_SCREEN, 0))
+        FatalError("Failed to alloc quartz screen private.\n");
 
     // Do display mode specific initialization
     quartzProcs->DisplayInit();
 }
 
-
 /*
  * QuartzInitInput
  *  Inform the main thread the X server is ready to handle events.
  */
-void QuartzInitInput(
-    int argc,
-    char **argv )
+void
+QuartzInitInput(int argc,
+                char **argv)
 {
     X11ApplicationSetCanQuit(0);
     X11ApplicationServerReady();
@@ -192,95 +199,48 @@ void QuartzInitInput(
         quartzProcs->InitInput(argc, argv);
 }
 
-
-#ifdef FAKE_RANDR
-
-static const int padlength[4] = {0, 3, 2, 1};
-
-static void
-RREditConnectionInfo (ScreenPtr pScreen)
+void
+QuartzUpdateScreens(void)
 {
-    xConnSetup	    *connSetup;
-    char	    *vendor;
-    xPixmapFormat   *formats;
-    xWindowRoot	    *root;
-    xDepth	    *depth;
-    xVisualType	    *visual;
-    int		    screen = 0;
-    int		    d;
-
-    connSetup = (xConnSetup *) ConnectionInfo;
-    vendor = (char *) connSetup + sizeof (xConnSetup);
-    formats = (xPixmapFormat *) ((char *) vendor +
-				 connSetup->nbytesVendor +
-				 padlength[connSetup->nbytesVendor & 3]);
-    root = (xWindowRoot *) ((char *) formats +
-			    sizeof (xPixmapFormat) * screenInfo.numPixmapFormats);
-    while (screen != pScreen->myNum)
-    {
-	depth = (xDepth *) ((char *) root + 
-			    sizeof (xWindowRoot));
-	for (d = 0; d < root->nDepths; d++)
-	{
-	    visual = (xVisualType *) ((char *) depth +
-				      sizeof (xDepth));
-	    depth = (xDepth *) ((char *) visual +
-				depth->nVisuals * sizeof (xVisualType));
-	}
-	root = (xWindowRoot *) ((char *) depth);
-	screen++;
-    }
-    root->pixWidth = pScreen->width;
-    root->pixHeight = pScreen->height;
-    root->mmWidth = pScreen->mmWidth;
-    root->mmHeight = pScreen->mmHeight;
-}
-#endif
-
-void QuartzUpdateScreens(void) {
     ScreenPtr pScreen;
     WindowPtr pRoot;
     int x, y, width, height, sx, sy;
     xEvent e;
     BoxRec bounds;
-    
-    if (noPseudoramiXExtension || screenInfo.numScreens != 1)
-    {
+
+    if (noPseudoramiXExtension || screenInfo.numScreens != 1) {
         /* FIXME: if not using Xinerama, we have multiple screens, and
-         to do this properly may need to add or remove screens. Which
-         isn't possible. So don't do anything. Another reason why
-         we default to running with Xinerama. */
-        
+           to do this properly may need to add or remove screens. Which
+           isn't possible. So don't do anything. Another reason why
+           we default to running with Xinerama. */
+
         return;
     }
-    
+
     pScreen = screenInfo.screens[0];
-    
+
     PseudoramiXResetScreens();
-    quartzProcs->AddPseudoramiXScreens(&x, &y, &width, &height);
-    
-    dixScreenOrigins[pScreen->myNum].x = x;
-    dixScreenOrigins[pScreen->myNum].y = y;
-    pScreen->mmWidth = pScreen->mmWidth * ((double) width / pScreen->width);
-    pScreen->mmHeight = pScreen->mmHeight * ((double) height / pScreen->height);
+    quartzProcs->AddPseudoramiXScreens(&x, &y, &width, &height, pScreen);
+
+    pScreen->x = x;
+    pScreen->y = y;
+    pScreen->mmWidth = pScreen->mmWidth * ((double)width / pScreen->width);
+    pScreen->mmHeight = pScreen->mmHeight * ((double)height / pScreen->height);
     pScreen->width = width;
     pScreen->height = height;
-    
+
     DarwinAdjustScreenOrigins(&screenInfo);
-    quartzProcs->UpdateScreen(pScreen);
-    
-    /* DarwinAdjustScreenOrigins or UpdateScreen may change dixScreenOrigins,
+
+    /* DarwinAdjustScreenOrigins or UpdateScreen may change pScreen->x/y,
      * so use it rather than x/y
      */
-    sx = dixScreenOrigins[pScreen->myNum].x + darwinMainScreenX;
-    sy = dixScreenOrigins[pScreen->myNum].y + darwinMainScreenY;
-    
+    sx = pScreen->x + darwinMainScreenX;
+    sy = pScreen->y + darwinMainScreenY;
+
     /* Adjust the root window. */
-    pRoot = WindowTable[pScreen->myNum];
+    pRoot = pScreen->root;
     AppleWMSetScreenOrigin(pRoot);
     pScreen->ResizeWindow(pRoot, x - sx, y - sy, width, height, NULL);
-    //pScreen->PaintWindowBackground (pRoot, &pRoot->borderClip,  PW_BACKGROUND);
-    miPaintWindow(pRoot, &pRoot->borderClip,  PW_BACKGROUND);
 
     /* <rdar://problem/7770779> pointer events are clipped to old display region after display reconfiguration
      * http://xquartz.macosforge.org/trac/ticket/346
@@ -293,7 +253,11 @@ void QuartzUpdateScreens(void) {
     inputInfo.pointer->spriteInfo->sprite->physLimits = bounds;
     inputInfo.pointer->spriteInfo->sprite->hotLimits = bounds;
 
-    DEBUG_LOG("Root Window: %dx%d @ (%d, %d) darwinMainScreen (%d, %d) xy (%d, %d) dixScreenOrigins (%d, %d)\n", width, height, x - sx, y - sy, darwinMainScreenX, darwinMainScreenY, x, y, dixScreenOrigins[pScreen->myNum].x, dixScreenOrigins[pScreen->myNum].y);
+    DEBUG_LOG(
+        "Root Window: %dx%d @ (%d, %d) darwinMainScreen (%d, %d) xy (%d, %d) dixScreenOrigins (%d, %d)\n",
+        width, height, x - sx, y - sy, darwinMainScreenX, darwinMainScreenY,
+        x, y,
+        pScreen->x, pScreen->y);
 
     /* Send an event for the root reconfigure */
     e.u.u.type = ConfigureNotify;
@@ -306,71 +270,138 @@ void QuartzUpdateScreens(void) {
     e.u.configureNotify.borderWidth = wBorderWidth(pRoot);
     e.u.configureNotify.override = pRoot->overrideRedirect;
     DeliverEvents(pRoot, &e, 1, NullWindow);
-    
-#ifdef FAKE_RANDR
-    RREditConnectionInfo(pScreen);
-#endif    
+
+    quartzProcs->UpdateScreen(pScreen);
+
+    /* miPaintWindow needs to be called after RootlessUpdateScreenPixmap (from xprUpdateScreen) */
+    miPaintWindow(pRoot, &pRoot->borderClip, PW_BACKGROUND);
+
+    /* Tell RandR about the new size, so new connections get the correct info */
+    RRScreenSizeNotify(pScreen);
 }
 
-void QuartzSetFullscreen(Bool state) {
-    
-    DEBUG_LOG("QuartzSetFullscreen: state=%d\n", state);
-    
-    if(quartzHasRoot == state)
+static void
+pokeActivityCallback(CFRunLoopTimerRef timer, void *info)
+{
+    UpdateSystemActivity(OverallAct);
+}
+
+static void
+QuartzScreenSaver(int state)
+{
+    static CFRunLoopTimerRef pokeActivityTimer = NULL;
+    static CFRunLoopTimerContext pokeActivityContext =
+    { 0, NULL, NULL, NULL, NULL };
+    static OSSpinLock pokeActivitySpinLock = OS_SPINLOCK_INIT;
+
+    OSSpinLockLock(&pokeActivitySpinLock);
+
+    if (state) {
+        if (pokeActivityTimer == NULL)
+            goto QuartzScreenSaverEnd;
+
+        CFRunLoopTimerInvalidate(pokeActivityTimer);
+        CFRelease(pokeActivityTimer);
+        pokeActivityTimer = NULL;
+    }
+    else {
+        if (pokeActivityTimer != NULL)
+            goto QuartzScreenSaverEnd;
+
+        pokeActivityTimer = CFRunLoopTimerCreate(NULL,
+                                                 CFAbsoluteTimeGetCurrent(),
+                                                 30, 0, 0,
+                                                 pokeActivityCallback,
+                                                 &pokeActivityContext);
+        if (pokeActivityTimer == NULL) {
+            ErrorF("Unable to create pokeActivityTimer.\n");
+            goto QuartzScreenSaverEnd;
+        }
+
+        CFRunLoopAddTimer(
+            CFRunLoopGetMain(), pokeActivityTimer, kCFRunLoopCommonModes);
+    }
+QuartzScreenSaverEnd:
+    OSSpinLockUnlock(&pokeActivitySpinLock);
+}
+
+void
+QuartzShowFullscreen(int state)
+{
+    int i;
+
+    DEBUG_LOG("QuartzShowFullscreen: state=%d\n", state);
+
+    if (XQuartzIsRootless) {
+        ErrorF("QuartzShowFullscreen called while in rootless mode.\n");
         return;
-    
-    quartzHasRoot = state;
-    
-    xp_disable_update ();
-    
-    if (!quartzHasRoot && !quartzEnableRootless)
-        RootlessHideAllWindows();
-    
-    RootlessUpdateRooted(quartzHasRoot);
-    
-    if (quartzHasRoot && !quartzEnableRootless)
-        RootlessShowAllWindows ();
-    
-    if (quartzHasRoot || quartzEnableRootless) {
-        RootlessRepositionWindows(screenInfo.screens[0]);
     }
 
-    /* Somehow the menubar manages to interfere with our event stream
-     * in fullscreen mode, even though it's not visible. 
-     */
-    X11ApplicationShowHideMenubar(!quartzHasRoot);
-    
-    xp_reenable_update ();
-    
-    if (quartzFullscreenDisableHotkeys)
-        xp_disable_hot_keys(quartzHasRoot);
-}
+    QuartzScreenSaver(!state);
 
-void QuartzSetRootless(Bool state) {
-    if(quartzEnableRootless == state)
+    if (XQuartzFullscreenVisible == state)
         return;
-    
-    quartzEnableRootless = state;
+
+    XQuartzFullscreenVisible = state;
 
     xp_disable_update();
 
-    /* When in rootless, the menubar is not part of the screen, so we need to update our screens on toggle */    
-    QuartzUpdateScreens();
+    if (!XQuartzFullscreenVisible)
+        RootlessHideAllWindows();
 
-    if(!quartzHasRoot) {
-        if(!quartzEnableRootless) {
-            RootlessHideAllWindows();
-        } else {
-            RootlessShowAllWindows();
+    RootlessUpdateRooted(XQuartzFullscreenVisible);
+
+    if (XQuartzFullscreenVisible) {
+        RootlessShowAllWindows();
+        for (i = 0; i < screenInfo.numScreens; i++) {
+            ScreenPtr pScreen = screenInfo.screens[i];
+            RootlessRepositionWindows(pScreen);
+            // JH: I don't think this is necessary, but keeping it here as a reminder
+            //RootlessUpdateScreenPixmap(pScreen);
         }
     }
 
-    X11ApplicationShowHideMenubar(!quartzHasRoot);
+    /* Somehow the menubar manages to interfere with our event stream
+     * in fullscreen mode, even though it's not visible.
+     */
+    X11ApplicationShowHideMenubar(!XQuartzFullscreenVisible);
 
     xp_reenable_update();
 
-    if (!quartzEnableRootless && quartzFullscreenDisableHotkeys)
-        xp_disable_hot_keys(quartzHasRoot);
+    if (XQuartzFullscreenDisableHotkeys)
+        xp_disable_hot_keys(XQuartzFullscreenVisible);
+}
+
+void
+QuartzSetRootless(Bool state)
+{
+    DEBUG_LOG("QuartzSetRootless state=%d\n", state);
+
+    if (XQuartzIsRootless == state)
+        return;
+
+    if (state)
+        QuartzShowFullscreen(FALSE);
+
+    XQuartzIsRootless = state;
+
+    xp_disable_update();
+
+    /* When in rootless, the menubar is not part of the screen, so we need to update our screens on toggle */
+    QuartzUpdateScreens();
+
+    if (XQuartzIsRootless) {
+        RootlessShowAllWindows();
+    }
+    else {
+        RootlessHideAllWindows();
+    }
+
+    X11ApplicationShowHideMenubar(TRUE);
+
+    xp_reenable_update();
+
+    xp_disable_hot_keys(FALSE);
 }
 
 /*
@@ -379,23 +410,24 @@ void QuartzSetRootless(Bool state) {
  *  Calls mode specific screen resume to restore the X clip regions
  *  (if needed) and the X server cursor state.
  */
-void QuartzShow(void) {
+void
+QuartzShow(void)
+{
     int i;
 
-    if (quartzServerVisible)
+    if (XQuartzServerVisible)
         return;
-    
-    quartzServerVisible = TRUE;
+
+    XQuartzServerVisible = TRUE;
     for (i = 0; i < screenInfo.numScreens; i++) {
         if (screenInfo.screens[i]) {
             quartzProcs->ResumeScreen(screenInfo.screens[i]);
         }
     }
-    
-    if (!quartzEnableRootless)
-        QuartzSetFullscreen(TRUE);
-}
 
+    if (!XQuartzIsRootless)
+        QuartzShowFullscreen(TRUE);
+}
 
 /*
  * QuartzHide
@@ -403,47 +435,85 @@ void QuartzShow(void) {
  *  hidden. Calls mode specific screen suspend to set X clip regions to
  *  prevent drawing (if needed) and restore the Aqua cursor.
  */
-void QuartzHide(void)
+void
+QuartzHide(void)
 {
     int i;
 
-    if (quartzServerVisible) {
+    if (XQuartzServerVisible) {
         for (i = 0; i < screenInfo.numScreens; i++) {
             if (screenInfo.screens[i]) {
                 quartzProcs->SuspendScreen(screenInfo.screens[i]);
             }
         }
     }
-    
-    QuartzSetFullscreen(FALSE);
-    quartzServerVisible = FALSE;
-}
 
+    if (!XQuartzIsRootless)
+        QuartzShowFullscreen(FALSE);
+    XQuartzServerVisible = FALSE;
+}
 
 /*
  * QuartzSetRootClip
  *  Enable or disable rendering to the X screen.
  */
-void QuartzSetRootClip(
-    BOOL enable)
+void
+QuartzSetRootClip(BOOL enable)
 {
     int i;
 
-    if (!quartzServerVisible)
+    if (!XQuartzServerVisible)
         return;
 
     for (i = 0; i < screenInfo.numScreens; i++) {
         if (screenInfo.screens[i]) {
-            xf86SetRootClip(screenInfo.screens[i], enable);
+            SetRootClip(screenInfo.screens[i], enable);
         }
     }
 }
 
-/* 
+/*
  * QuartzSpaceChanged
  *  Unmap offscreen windows, map onscreen windows
  */
-void QuartzSpaceChanged(uint32_t space_id) {
+void
+QuartzSpaceChanged(uint32_t space_id)
+{
     /* Do something special here, so we don't depend on quartz-wm for spaces to work... */
-    DEBUG_LOG("Space Changed (%u) ... do something interesting...\n", space_id);
+    DEBUG_LOG("Space Changed (%u) ... do something interesting...\n",
+              space_id);
+}
+
+/*
+ * QuartzCopyDisplayIDs
+ *  Associate an X11 screen with one or more CoreGraphics display IDs by copying
+ *  the list into a private array. Free the previously copied array, if present.
+ */
+void
+QuartzCopyDisplayIDs(ScreenPtr pScreen,
+                     int displayCount, CGDirectDisplayID *displayIDs)
+{
+    QuartzScreenPtr pQuartzScreen = QUARTZ_PRIV(pScreen);
+
+    free(pQuartzScreen->displayIDs);
+    if (displayCount) {
+        size_t size = displayCount * sizeof(CGDirectDisplayID);
+        pQuartzScreen->displayIDs = malloc(size);
+        memcpy(pQuartzScreen->displayIDs, displayIDs, size);
+    }
+    else {
+        pQuartzScreen->displayIDs = NULL;
+    }
+    pQuartzScreen->displayCount = displayCount;
+}
+
+void
+NSBeep(void);
+void
+DDXRingBell(int volume,              // volume is % of max
+            int pitch,               // pitch is Hz
+            int duration)            // duration is milliseconds
+{
+    if (volume)
+        NSBeep();
 }

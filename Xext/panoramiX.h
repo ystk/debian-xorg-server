@@ -26,7 +26,6 @@ Equipment Corporation.
 
 ******************************************************************/
 
-
 /* THIS IS NOT AN X PROJECT TEAM SPECIFICATION */
 
 /*  
@@ -44,57 +43,37 @@ Equipment Corporation.
 #include <X11/extensions/panoramiXproto.h>
 #undef _PANORAMIX_SERVER
 #include "gcstruct.h"
-
-
-typedef struct _PanoramiXData {
-    int x;
-    int y;
-    int width;
-    int height;
-} PanoramiXData;
+#include "dixstruct.h"
 
 typedef struct _PanoramiXInfo {
-    XID id ;
+    XID id;
 } PanoramiXInfo;
 
 typedef struct {
     PanoramiXInfo info[MAXSCREENS];
     RESTYPE type;
     union {
-	struct {
-	    char   visibility;
-	    char   class;
-            char   root;
-	} win;
-	struct {
-	    Bool shared;
-	} pix;
-#ifdef RENDER
-	struct {
-	    Bool root;
-	} pict;
-#endif
-	char raw_data[4];
+        struct {
+            char visibility;
+            char class;
+            char root;
+        } win;
+        struct {
+            Bool shared;
+        } pix;
+        struct {
+            Bool root;
+        } pict;
+        char raw_data[4];
     } u;
 } PanoramiXRes;
 
 #define FOR_NSCREENS_FORWARD(j) for(j = 0; j < PanoramiXNumScreens; j++)
+#define FOR_NSCREENS_FORWARD_SKIP(j) for(j = 1; j < PanoramiXNumScreens; j++)
 #define FOR_NSCREENS_BACKWARD(j) for(j = PanoramiXNumScreens - 1; j >= 0; j--)
 #define FOR_NSCREENS(j) FOR_NSCREENS_FORWARD(j)
 
-#define BREAK_IF(a) if ((a)) break
-#define IF_RETURN(a,b) if ((a)) return (b)
-
-#define FORCE_ROOT(a) { \
-    int _j; \
-    for (_j = PanoramiXNumScreens - 1; _j; _j--) \
-        if ((a).root == WindowTable[_j]->drawable.id)   \
-            break;                                      \
-    (a).rootX += panoramiXdataPtr[_j].x;             \
-    (a).rootY += panoramiXdataPtr[_j].y;             \
-    (a).root = WindowTable[0]->drawable.id;          \
-}
-
 #define IS_SHARED_PIXMAP(r) (((r)->type == XRT_PIXMAP) && (r)->u.pix.shared)
 
-#endif /* _PANORAMIX_H_ */
+#define IS_ROOT_DRAWABLE(d) (((d)->type == XRT_WINDOW) && (d)->u.win.root)
+#endif                          /* _PANORAMIX_H_ */

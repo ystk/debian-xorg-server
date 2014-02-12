@@ -1,9 +1,5 @@
 noinst_LTLIBRARIES = liblinux.la
 
-if LINUX_IA64
-PLATFORM_PCI_SUPPORT = $(srcdir)/../shared/ia64Pci.c
-PLATFORM_INCLUDES = -I$(srcdir)/../shared
-endif
 if LINUX_ALPHA
 noinst_LTLIBRARIES += liblinuxev56.la
 PLATFORM_PCI_SUPPORT = \
@@ -40,13 +36,7 @@ AM_CFLAGS = -DUSESTDRES -DHAVE_SYSV_IPC $(DIX_CFLAGS) $(XORG_CFLAGS) $(PLATFORM_
 
 INCLUDES = $(XORG_INCS) $(PLATFORM_INCLUDES) $(LIBDRM_CFLAGS)
 
-# FIXME: These need to be added to the build
-LNX_EXTRA_SRCS = \
-	lnx_font.c
-
 EXTRA_DIST = \
-	$(LNX_EXTRA_SRCS) \
-	lnx.h \
 	$(srcdir)/../shared/xf86Axp.h
 
 if LINUX_ALPHA

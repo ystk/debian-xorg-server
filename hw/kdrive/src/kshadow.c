@@ -1,5 +1,5 @@
 /*
- * Copyright © 1999 Keith Packard
+ * Copyright Â© 1999 Keith Packard
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -26,58 +26,55 @@
 #include "kdrive.h"
 
 Bool
-KdShadowFbAlloc (KdScreenInfo *screen, int fb, Bool rotate)
+KdShadowFbAlloc(KdScreenInfo * screen, Bool rotate)
 {
-    int	    paddedWidth;
-    void    *buf;
-    int	    width = rotate ? screen->height : screen->width;
-    int	    height = rotate ? screen->width : screen->height;
-    int	    bpp = screen->fb[fb].bitsPerPixel;
+    int paddedWidth;
+    void *buf;
+    int width = rotate ? screen->height : screen->width;
+    int height = rotate ? screen->width : screen->height;
+    int bpp = screen->fb.bitsPerPixel;
 
     /* use fb computation for width */
-    paddedWidth = ((width * bpp + FB_MASK) >> FB_SHIFT) * sizeof (FbBits);
-    buf = xalloc (paddedWidth * height);
+    paddedWidth = ((width * bpp + FB_MASK) >> FB_SHIFT) * sizeof(FbBits);
+    buf = malloc(paddedWidth * height);
     if (!buf)
-	return FALSE;
-    if (screen->fb[fb].shadow)
-	xfree (screen->fb[fb].frameBuffer);
-    screen->fb[fb].shadow = TRUE;
-    screen->fb[fb].frameBuffer = buf;
-    screen->fb[fb].byteStride = paddedWidth;
-    screen->fb[fb].pixelStride = paddedWidth * 8 / bpp;
+        return FALSE;
+    if (screen->fb.shadow)
+        free(screen->fb.frameBuffer);
+    screen->fb.shadow = TRUE;
+    screen->fb.frameBuffer = buf;
+    screen->fb.byteStride = paddedWidth;
+    screen->fb.pixelStride = paddedWidth * 8 / bpp;
     return TRUE;
 }
 
 void
-KdShadowFbFree (KdScreenInfo *screen, int fb)
+KdShadowFbFree(KdScreenInfo * screen)
 {
-    if (screen->fb[fb].shadow)
-    {
-	xfree (screen->fb[fb].frameBuffer);
-	screen->fb[fb].frameBuffer = 0;
-	screen->fb[fb].shadow = FALSE;
+    if (screen->fb.shadow) {
+        free(screen->fb.frameBuffer);
+        screen->fb.frameBuffer = 0;
+        screen->fb.shadow = FALSE;
     }
 }
 
 Bool
-KdShadowSet (ScreenPtr pScreen, int randr, ShadowUpdateProc update, ShadowWindowProc window)
+KdShadowSet(ScreenPtr pScreen, int randr, ShadowUpdateProc update,
+            ShadowWindowProc window)
 {
     KdScreenPriv(pScreen);
     KdScreenInfo *screen = pScreenPriv->screen;
-    int	 fb;
 
-    shadowRemove (pScreen, pScreen->GetScreenPixmap(pScreen));
-    for (fb = 0; fb < KD_MAX_FB && screen->fb[fb].depth; fb++)
-    {
-	if (screen->fb[fb].shadow)
-            return shadowAdd (pScreen, pScreen->GetScreenPixmap(pScreen),
-                              update, window, randr, 0);
+    shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
+    if (screen->fb.shadow) {
+        return shadowAdd(pScreen, pScreen->GetScreenPixmap(pScreen),
+                         update, window, randr, 0);
     }
     return TRUE;
 }
 
 void
-KdShadowUnset (ScreenPtr pScreen)
+KdShadowUnset(ScreenPtr pScreen)
 {
     shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
 }

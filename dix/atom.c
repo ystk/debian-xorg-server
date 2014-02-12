@@ -22,7 +22,6 @@ Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
-
 Copyright 1987 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
@@ -45,7 +44,6 @@ SOFTWARE.
 
 ******************************************************************/
 
-
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
 #endif
@@ -61,14 +59,14 @@ SOFTWARE.
 #define InitialTableSize 100
 
 typedef struct _Node {
-    struct _Node   *left,   *right;
+    struct _Node *left, *right;
     Atom a;
     unsigned int fingerPrint;
-    const char   *string;
+    const char *string;
 } NodeRec, *NodePtr;
 
 static Atom lastAtom = None;
-static NodePtr atomRoot = (NodePtr)NULL;
+static NodePtr atomRoot = NULL;
 static unsigned long tableLength;
 static NodePtr *nodeTable;
 
@@ -77,79 +75,71 @@ void FreeAtom(NodePtr patom);
 Atom
 MakeAtom(const char *string, unsigned len, Bool makeit)
 {
-    NodePtr * np;
+    NodePtr *np;
     unsigned i;
     int comp;
     unsigned int fp = 0;
 
     np = &atomRoot;
-    for (i = 0; i < (len+1)/2; i++)
-    {
-	fp = fp * 27 + string[i];
-	fp = fp * 27 + string[len - 1 - i];
+    for (i = 0; i < (len + 1) / 2; i++) {
+        fp = fp * 27 + string[i];
+        fp = fp * 27 + string[len - 1 - i];
     }
-    while (*np != (NodePtr) NULL)
-    {
-	if (fp < (*np)->fingerPrint)
-	    np = &((*np)->left);
-	else if (fp > (*np)->fingerPrint)
-	    np = &((*np)->right);
-	else
-	{			       /* now start testing the strings */
-	    comp = strncmp(string, (*np)->string, (int)len);
-	    if ((comp < 0) || ((comp == 0) && (len < strlen((*np)->string))))
-		np = &((*np)->left);
-	    else if (comp > 0)
-		np = &((*np)->right);
-	    else
-		return(*np)->a;
-	    }
+    while (*np != NULL) {
+        if (fp < (*np)->fingerPrint)
+            np = &((*np)->left);
+        else if (fp > (*np)->fingerPrint)
+            np = &((*np)->right);
+        else {                  /* now start testing the strings */
+            comp = strncmp(string, (*np)->string, (int) len);
+            if ((comp < 0) || ((comp == 0) && (len < strlen((*np)->string))))
+                np = &((*np)->left);
+            else if (comp > 0)
+                np = &((*np)->right);
+            else
+                return (*np)->a;
+        }
     }
-    if (makeit)
-    {
-	NodePtr nd;
+    if (makeit) {
+        NodePtr nd;
 
-	nd = xalloc(sizeof(NodeRec));
-	if (!nd)
-	    return BAD_RESOURCE;
-	if (lastAtom < XA_LAST_PREDEFINED)
-	{
-	    nd->string = string;
-	}
-	else
-	{
-	    char *newstring = xalloc(len + 1);
-	    if (!newstring) {
-		xfree(nd);
-		return BAD_RESOURCE;
-	    }
-	    strncpy(newstring, string, (int)len);
-	    newstring[len] = 0;
-	    nd->string = newstring;
-	}
-	if ((lastAtom + 1) >= tableLength) {
-	    NodePtr *table;
+        nd = malloc(sizeof(NodeRec));
+        if (!nd)
+            return BAD_RESOURCE;
+        if (lastAtom < XA_LAST_PREDEFINED) {
+            nd->string = string;
+        }
+        else {
+            nd->string = strndup(string, len);
+            if (!nd->string) {
+                free(nd);
+                return BAD_RESOURCE;
+            }
+        }
+        if ((lastAtom + 1) >= tableLength) {
+            NodePtr *table;
 
-	    table = (NodePtr *) xrealloc(nodeTable,
-					 tableLength * (2 * sizeof(NodePtr)));
-	    if (!table) {
-		if (nd->string != string)
-		    xfree(nd->string);
-		xfree(nd);
-		return BAD_RESOURCE;
-	    }
-	    tableLength <<= 1;
-	    nodeTable = table;
-	}
-	*np = nd;
-	nd->left = nd->right = (NodePtr) NULL;
-	nd->fingerPrint = fp;
-	nd->a = (++lastAtom);
-	*(nodeTable+lastAtom) = nd;
-	return nd->a;
+            table = realloc(nodeTable, tableLength * (2 * sizeof(NodePtr)));
+            if (!table) {
+                if (nd->string != string) {
+                    /* nd->string has been strdup'ed */
+                    free((char *) nd->string);
+                }
+                free(nd);
+                return BAD_RESOURCE;
+            }
+            tableLength <<= 1;
+            nodeTable = table;
+        }
+        *np = nd;
+        nd->left = nd->right = NULL;
+        nd->fingerPrint = fp;
+        nd->a = ++lastAtom;
+        nodeTable[lastAtom] = nd;
+        return nd->a;
     }
     else
-	return None;
+        return None;
 }
 
 Bool
@@ -162,8 +152,11 @@ const char *
 NameForAtom(Atom atom)
 {
     NodePtr node;
-    if (atom > lastAtom) return 0;
-    if ((node = nodeTable[atom]) == (NodePtr)NULL) return 0;
+
+    if (atom > lastAtom)
+        return 0;
+    if ((node = nodeTable[atom]) == NULL)
+        return 0;
     return node->string;
 }
 
@@ -176,24 +169,29 @@ AtomError(void)
 void
 FreeAtom(NodePtr patom)
 {
-    if(patom->left)
-	FreeAtom(patom->left);
-    if(patom->right)
-	FreeAtom(patom->right);
-    if (patom->a > XA_LAST_PREDEFINED)
-	xfree(patom->string);
-    xfree(patom);
+    if (patom->left)
+        FreeAtom(patom->left);
+    if (patom->right)
+        FreeAtom(patom->right);
+    if (patom->a > XA_LAST_PREDEFINED) {
+        /*
+         * All strings above XA_LAST_PREDEFINED are strdup'ed, so it's safe to
+         * cast here
+         */
+        free((char *) patom->string);
+    }
+    free(patom);
 }
 
 void
 FreeAllAtoms(void)
 {
-    if(atomRoot == (NodePtr)NULL)
-	return;
+    if (atomRoot == NULL)
+        return;
     FreeAtom(atomRoot);
-    atomRoot = (NodePtr)NULL;
-    xfree(nodeTable);
-    nodeTable = (NodePtr *)NULL;
+    atomRoot = NULL;
+    free(nodeTable);
+    nodeTable = NULL;
     lastAtom = None;
 }
 
@@ -202,11 +200,11 @@ InitAtoms(void)
 {
     FreeAllAtoms();
     tableLength = InitialTableSize;
-    nodeTable = xalloc(InitialTableSize*sizeof(NodePtr));
+    nodeTable = malloc(InitialTableSize * sizeof(NodePtr));
     if (!nodeTable)
-	AtomError();
-    nodeTable[None] = (NodePtr)NULL;
+        AtomError();
+    nodeTable[None] = NULL;
     MakePredeclaredAtoms();
     if (lastAtom != XA_LAST_PREDEFINED)
-	AtomError ();
+        AtomError();
 }

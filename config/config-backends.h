@@ -26,13 +26,23 @@
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
 #endif
+#include "input.h"
+#include "list.h"
+
+void remove_devices(const char *backend, const char *config_info);
+BOOL device_is_duplicate(const char *config_info);
+
+#ifdef CONFIG_UDEV
+int config_udev_init(void);
+void config_udev_fini(void);
+#else
 
 #ifdef CONFIG_NEED_DBUS
 #include <dbus/dbus.h>
 
-typedef void (*config_dbus_core_connect_hook)(DBusConnection *connection,
-                                              void *data);
-typedef void (*config_dbus_core_disconnect_hook)(void *data);
+typedef void (*config_dbus_core_connect_hook) (DBusConnection * connection,
+                                               void *data);
+typedef void (*config_dbus_core_disconnect_hook) (void *data);
 
 struct config_dbus_core_hook {
     config_dbus_core_connect_hook connect;
@@ -56,4 +66,10 @@ void config_dbus_fini(void);
 #ifdef CONFIG_HAL
 int config_hal_init(void);
 void config_hal_fini(void);
+#endif
+#endif
+
+#ifdef CONFIG_WSCONS
+int config_wscons_init(void);
+void config_wscons_fini(void);
 #endif

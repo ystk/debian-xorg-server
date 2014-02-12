@@ -41,22 +41,18 @@
 
 /** Colormap private area. */
 typedef struct _dmxColormapPriv {
-    Colormap  cmap;
+    Colormap cmap;
 } dmxColormapPrivRec, *dmxColormapPrivPtr;
-
 
 extern Bool dmxCreateColormap(ColormapPtr pColormap);
 extern void dmxDestroyColormap(ColormapPtr pColormap);
 extern void dmxInstallColormap(ColormapPtr pColormap);
-extern void dmxStoreColors(ColormapPtr pColormap, int ndef, xColorItem *pdef);
+extern void dmxStoreColors(ColormapPtr pColormap, int ndef, xColorItem * pdef);
 
 extern Bool dmxCreateDefColormap(ScreenPtr pScreen);
 
 extern Bool dmxBECreateColormap(ColormapPtr pColormap);
 extern Bool dmxBEFreeColormap(ColormapPtr pColormap);
-
-/** Private index.  \see dmxcmap.c \see dmxscrinit.c \see dmxwindow.c */
-extern DevPrivateKey dmxColormapPrivateKey;
 
 /** Set colormap private structure. */
 #define DMX_SET_COLORMAP_PRIV(_pCMap, _pCMapPriv)			\
@@ -66,4 +62,4 @@ extern DevPrivateKey dmxColormapPrivateKey;
 #define DMX_GET_COLORMAP_PRIV(_pCMap) (dmxColormapPrivPtr)		\
     dixLookupPrivate(&(_pCMap)->devPrivates, dmxColormapPrivateKey)
 
-#endif /* DMXCMAP_H */
+#endif                          /* DMXCMAP_H */

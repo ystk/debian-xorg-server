@@ -33,22 +33,18 @@
 #include <dix-config.h>
 #endif
 
-#include <stddef.h> /* For NULL */
-#include <limits.h> /* For CHAR_BIT */
+#include <stddef.h>             /* For NULL */
+#include <limits.h>             /* For CHAR_BIT */
 
 #include "rootlessCommon.h"
 #include "colormapst.h"
 
 unsigned int rootless_CopyBytes_threshold = 0;
-unsigned int rootless_FillBytes_threshold = 0;
-unsigned int rootless_CompositePixels_threshold = 0;
 unsigned int rootless_CopyWindow_threshold = 0;
-#ifdef ROOTLESS_GLOBAL_COORDS
 int rootlessGlobalOffsetX = 0;
 int rootlessGlobalOffsetY = 0;
-#endif
 
-RegionRec rootlessHugeRoot = {{-32767, -32767, 32767, 32767}, NULL};
+RegionRec rootlessHugeRoot = { {-32767, -32767, 32767, 32767}, NULL };
 
 /* Following macro from miregion.c */
 
@@ -58,7 +54,6 @@ RegionRec rootlessHugeRoot = {{-32767, -32767, 32767, 32767}, NULL};
           ((r1)->x1 >= (r2)->x2)  || \
           ((r1)->y2 <= (r2)->y1)  || \
           ((r1)->y1 >= (r2)->y2) ) )
-
 
 /*
  * TopLevelParent
@@ -75,12 +70,11 @@ TopLevelParent(WindowPtr pWindow)
         return pWindow;
 
     top = pWindow;
-    while (top && ! IsTopLevel(top))
+    while (top && !IsTopLevel(top))
         top = top->parent;
 
     return top;
 }
-
 
 /*
  * IsFramedWindow
@@ -92,6 +86,9 @@ IsFramedWindow(WindowPtr pWin)
 {
     WindowPtr top;
 
+    if (!dixPrivateKeyRegistered(&rootlessWindowPrivateKeyRec))
+        return FALSE;
+
     if (!pWin->realized)
         return FALSE;
     top = TopLevelParent(pWin);
@@ -100,40 +97,42 @@ IsFramedWindow(WindowPtr pWin)
 }
 
 Bool
-RootlessResolveColormap (ScreenPtr pScreen, int first_color,
-                         int n_colors, uint32_t *colors)
+RootlessResolveColormap(ScreenPtr pScreen, int first_color,
+                        int n_colors, uint32_t * colors)
 {
-  int last, i;
-  ColormapPtr map;
+    int last, i;
+    ColormapPtr map;
 
-  map = RootlessGetColormap (pScreen);
-  if (map == NULL || map->class != PseudoColor) return FALSE;
+    map = RootlessGetColormap(pScreen);
+    if (map == NULL || map->class != PseudoColor)
+        return FALSE;
 
-  last = min (map->pVisual->ColormapEntries, first_color + n_colors);
-  for (i = max (0, first_color); i < last; i++) {
-    Entry *ent = map->red + i;
-    uint16_t red, green, blue;
+    last = min(map->pVisual->ColormapEntries, first_color + n_colors);
+    for (i = max(0, first_color); i < last; i++) {
+        Entry *ent = map->red + i;
+        uint16_t red, green, blue;
 
-      if (!ent->refcnt)	continue;
-      if (ent->fShared) {
-	red = ent->co.shco.red->color;
-	green = ent->co.shco.green->color;
-	blue = ent->co.shco.blue->color;
-      } else {
-	red = ent->co.local.red;
-	green = ent->co.local.green;
-	blue = ent->co.local.blue;
-      }
+        if (!ent->refcnt)
+            continue;
+        if (ent->fShared) {
+            red = ent->co.shco.red->color;
+            green = ent->co.shco.green->color;
+            blue = ent->co.shco.blue->color;
+        }
+        else {
+            red = ent->co.local.red;
+            green = ent->co.local.green;
+            blue = ent->co.local.blue;
+        }
 
-      colors[i - first_color] = (0xFF000000UL
-				 | ((uint32_t) red & 0xff00) << 8
-				 | (green & 0xff00)
-				 | (blue >> 8));
+        colors[i - first_color] = (0xFF000000UL
+                                   | ((uint32_t) red & 0xff00) << 8
+                                   | (green & 0xff00)
+                                   | (blue >> 8));
     }
 
-  return TRUE;
+    return TRUE;
 }
-
 
 /*
  * RootlessStartDrawing
@@ -141,7 +140,8 @@ RootlessResolveColormap (ScreenPtr pScreen, int first_color,
  *  Each top-level parent has a Pixmap representing its backing buffer,
  *  which all of its children inherit.
  */
-void RootlessStartDrawing(WindowPtr pWindow)
+void
+RootlessStartDrawing(WindowPtr pWindow)
 {
     ScreenPtr pScreen = pWindow->drawable.pScreen;
     WindowPtr top = TopLevelParent(pWindow);
@@ -165,8 +165,7 @@ void RootlessStartDrawing(WindowPtr pWindow)
             GetScratchPixmapHeader(pScreen, winRec->width, winRec->height,
                                    top->drawable.depth,
                                    top->drawable.bitsPerPixel,
-                                   winRec->bytesPerRow,
-                                   winRec->pixelData);
+                                   winRec->bytesPerRow, winRec->pixelData);
         SetPixmapBaseToScreen(winRec->pixmap,
                               top->drawable.x - bw, top->drawable.y - bw);
 
@@ -174,55 +173,67 @@ void RootlessStartDrawing(WindowPtr pWindow)
     }
 
     curPixmap = pScreen->GetWindowPixmap(pWindow);
-    if (curPixmap == winRec->pixmap)
-    {
-        RL_DEBUG_MSG("Window %p already has winRec->pixmap %p; not pushing\n", pWindow, winRec->pixmap);
+    if (curPixmap == winRec->pixmap) {
+        RL_DEBUG_MSG("Window %p already has winRec->pixmap %p; not pushing\n",
+                     pWindow, winRec->pixmap);
     }
-    else
-    {
-        PixmapPtr oldPixmap = dixLookupPrivate(&pWindow->devPrivates, rootlessWindowOldPixmapPrivateKey);
-        if (oldPixmap != NULL)
-        {
+    else {
+        PixmapPtr oldPixmap =
+            dixLookupPrivate(&pWindow->devPrivates,
+                             rootlessWindowOldPixmapPrivateKey);
+        if (oldPixmap != NULL) {
             if (oldPixmap == curPixmap)
-                RL_DEBUG_MSG("Window %p's curPixmap %p is the same as its oldPixmap; strange\n", pWindow, curPixmap);
+                RL_DEBUG_MSG
+                    ("Window %p's curPixmap %p is the same as its oldPixmap; strange\n",
+                     pWindow, curPixmap);
             else
-                RL_DEBUG_MSG("Window %p's existing oldPixmap %p being lost!\n", pWindow, oldPixmap);
+                RL_DEBUG_MSG("Window %p's existing oldPixmap %p being lost!\n",
+                             pWindow, oldPixmap);
         }
-	dixSetPrivate(&pWindow->devPrivates, rootlessWindowOldPixmapPrivateKey, curPixmap);
+        dixSetPrivate(&pWindow->devPrivates, rootlessWindowOldPixmapPrivateKey,
+                      curPixmap);
         pScreen->SetWindowPixmap(pWindow, winRec->pixmap);
     }
 }
-
 
 /*
  * RootlessStopDrawing
  *  Stop drawing to a window's backing buffer. If flush is true,
  *  damaged regions are flushed to the screen.
  */
-static int RestorePreDrawingPixmapVisitor(WindowPtr pWindow, pointer data)
+static int
+RestorePreDrawingPixmapVisitor(WindowPtr pWindow, pointer data)
 {
-    RootlessWindowRec *winRec = (RootlessWindowRec*)data;
+    RootlessWindowRec *winRec = (RootlessWindowRec *) data;
     ScreenPtr pScreen = pWindow->drawable.pScreen;
     PixmapPtr exPixmap = pScreen->GetWindowPixmap(pWindow);
-    PixmapPtr oldPixmap = dixLookupPrivate(&pWindow->devPrivates, rootlessWindowOldPixmapPrivateKey);
-    if (oldPixmap == NULL)
-    {
+    PixmapPtr oldPixmap =
+        dixLookupPrivate(&pWindow->devPrivates,
+                         rootlessWindowOldPixmapPrivateKey);
+    if (oldPixmap == NULL) {
         if (exPixmap == winRec->pixmap)
-            RL_DEBUG_MSG("Window %p appears to be in drawing mode (ex-pixmap %p equals winRec->pixmap, which is being freed) but has no oldPixmap!\n", pWindow, exPixmap);
+            RL_DEBUG_MSG
+                ("Window %p appears to be in drawing mode (ex-pixmap %p equals winRec->pixmap, which is being freed) but has no oldPixmap!\n",
+                 pWindow, exPixmap);
     }
-    else
-    {
+    else {
         if (exPixmap != winRec->pixmap)
-            RL_DEBUG_MSG("Window %p appears to be in drawing mode (oldPixmap %p) but ex-pixmap %p not winRec->pixmap %p!\n", pWindow, oldPixmap, exPixmap, winRec->pixmap);
+            RL_DEBUG_MSG
+                ("Window %p appears to be in drawing mode (oldPixmap %p) but ex-pixmap %p not winRec->pixmap %p!\n",
+                 pWindow, oldPixmap, exPixmap, winRec->pixmap);
         if (oldPixmap == winRec->pixmap)
-            RL_DEBUG_MSG("Window %p's oldPixmap %p is winRec->pixmap, which has just been freed!\n", pWindow, oldPixmap);
+            RL_DEBUG_MSG
+                ("Window %p's oldPixmap %p is winRec->pixmap, which has just been freed!\n",
+                 pWindow, oldPixmap);
         pScreen->SetWindowPixmap(pWindow, oldPixmap);
-        dixSetPrivate(&pWindow->devPrivates, rootlessWindowOldPixmapPrivateKey, NULL);
+        dixSetPrivate(&pWindow->devPrivates, rootlessWindowOldPixmapPrivateKey,
+                      NULL);
     }
     return WT_WALKCHILDREN;
 }
 
-void RootlessStopDrawing(WindowPtr pWindow, Bool flush)
+void
+RootlessStopDrawing(WindowPtr pWindow, Bool flush)
 {
     ScreenPtr pScreen = pWindow->drawable.pScreen;
     WindowPtr top = TopLevelParent(pWindow);
@@ -238,7 +249,7 @@ void RootlessStopDrawing(WindowPtr pWindow, Bool flush)
         SCREENREC(pScreen)->imp->StopDrawing(winRec->wid, flush);
 
         FreeScratchPixmapHeader(winRec->pixmap);
-        TraverseTree(top, RestorePreDrawingPixmapVisitor, (pointer)winRec);
+        TraverseTree(top, RestorePreDrawingPixmapVisitor, (pointer) winRec);
         winRec->pixmap = NULL;
 
         winRec->is_drawing = FALSE;
@@ -253,7 +264,6 @@ void RootlessStopDrawing(WindowPtr pWindow, Bool flush)
     }
 }
 
-
 /*
  * RootlessDamageRegion
  *  Mark a damaged region as requiring redisplay to screen.
@@ -262,7 +272,6 @@ void RootlessStopDrawing(WindowPtr pWindow, Bool flush)
 void
 RootlessDamageRegion(WindowPtr pWindow, RegionPtr pRegion)
 {
-    ScreenPtr pScreen = pWindow->drawable.pScreen;
     RootlessWindowRec *winRec;
     RegionRec clipped;
     WindowPtr pTop;
@@ -286,32 +295,32 @@ RootlessDamageRegion(WindowPtr pWindow, RegionPtr pRegion)
        drawing inside the clip, go to some lengths to avoid the general
        case intersection. */
 
-    b1 = REGION_EXTENTS(pScreen, &pWindow->borderClip);
-    b2 = REGION_EXTENTS(pScreen, pRegion);
+    b1 = RegionExtents(&pWindow->borderClip);
+    b2 = RegionExtents(pRegion);
 
     if (EXTENTCHECK(b1, b2)) {
         /* Regions may overlap. */
 
-        if (REGION_NUM_RECTS(pRegion) == 1) {
+        if (RegionNumRects(pRegion) == 1) {
             int in;
 
             /* Damaged region only has a single rect, so we can
                just compare that against the region */
 
-            in = RECT_IN_REGION(pScreen, &pWindow->borderClip,
-                                REGION_RECTS (pRegion));
+            in = RegionContainsRect(&pWindow->borderClip, RegionRects(pRegion));
             if (in == rgnIN) {
-            /* clip totally contains pRegion */
+                /* clip totally contains pRegion */
 
-#ifdef ROOTLESS_TRACK_DAMAGE
-                REGION_UNION(pScreen, &winRec->damage,
-                                 &winRec->damage, (pRegion));
-#else
-                SCREENREC(pScreen)->imp->DamageRects(winRec->wid,
-                                REGION_NUM_RECTS(pRegion),
-                                REGION_RECTS(pRegion),
-                                -winRec->x, -winRec->y);
-#endif
+                SCREENREC(pWindow->drawable.pScreen)->imp->DamageRects(winRec->
+                                                                       wid,
+                                                                       RegionNumRects
+                                                                       (pRegion),
+                                                                       RegionRects
+                                                                       (pRegion),
+                                                                       -winRec->
+                                                                       x,
+                                                                       -winRec->
+                                                                       y);
 
                 RootlessQueueRedisplay(pTop->drawable.pScreen);
                 goto out;
@@ -325,31 +334,29 @@ RootlessDamageRegion(WindowPtr pWindow, RegionPtr pRegion)
 
         /* clip overlaps pRegion, need to intersect */
 
-        REGION_NULL(pScreen, &clipped);
-        REGION_INTERSECT(pScreen, &clipped, &pWindow->borderClip, pRegion);
+        RegionNull(&clipped);
+        RegionIntersect(&clipped, &pWindow->borderClip, pRegion);
 
-#ifdef ROOTLESS_TRACK_DAMAGE
-        REGION_UNION(pScreen, &winRec->damage,
-                     &winRec->damage, (pRegion));
-#else
-        SCREENREC(pScreen)->imp->DamageRects(winRec->wid,
-                        REGION_NUM_RECTS(&clipped),
-                        REGION_RECTS(&clipped),
-                        -winRec->x, -winRec->y);
-#endif
+        SCREENREC(pWindow->drawable.pScreen)->imp->DamageRects(winRec->wid,
+                                                               RegionNumRects
+                                                               (&clipped),
+                                                               RegionRects
+                                                               (&clipped),
+                                                               -winRec->x,
+                                                               -winRec->y);
 
-        REGION_UNINIT(pScreen, &clipped);
+        RegionUninit(&clipped);
 
         RootlessQueueRedisplay(pTop->drawable.pScreen);
     }
 
-out:
+ out:
 #ifdef ROOTLESSDEBUG
     {
-        BoxRec *box = REGION_RECTS(pRegion), *end;
-        int numBox = REGION_NUM_RECTS(pRegion);
+        BoxRec *box = RegionRects(pRegion), *end;
+        int numBox = RegionNumRects(pRegion);
 
-        for (end = box+numBox; box < end; box++) {
+        for (end = box + numBox; box < end; box++) {
             RL_DEBUG_MSG("Damage rect: %i, %i, %i, %i\n",
                          box->x1, box->x2, box->y1, box->y2);
         }
@@ -357,7 +364,6 @@ out:
 #endif
     return;
 }
-
 
 /*
  * RootlessDamageBox
@@ -369,13 +375,12 @@ RootlessDamageBox(WindowPtr pWindow, BoxPtr pBox)
 {
     RegionRec region;
 
-    REGION_INIT(pWindow->drawable.pScreen, &region, pBox, 1);
+    RegionInit(&region, pBox, 1);
 
     RootlessDamageRegion(pWindow, &region);
 
-    REGION_UNINIT(pWindow->drawable.pScreen, &region);  /* no-op */
+    RegionUninit(&region);      /* no-op */
 }
-
 
 /*
  * RootlessDamageRect
@@ -396,13 +401,12 @@ RootlessDamageRect(WindowPtr pWindow, int x, int y, int w, int h)
     box.y1 = y;
     box.y2 = y + h;
 
-    REGION_INIT(pWindow->drawable.pScreen, &region, &box, 1);
+    RegionInit(&region, &box, 1);
 
     RootlessDamageRegion(pWindow, &region);
 
-    REGION_UNINIT(pWindow->drawable.pScreen, &region);  /* no-op */
+    RegionUninit(&region);      /* no-op */
 }
-
 
 /*
  * RootlessRedisplay
@@ -411,34 +415,8 @@ RootlessDamageRect(WindowPtr pWindow, int x, int y, int w, int h)
 void
 RootlessRedisplay(WindowPtr pWindow)
 {
-#ifdef ROOTLESS_TRACK_DAMAGE
-
-    RootlessWindowRec *winRec = WINREC(pWindow);
-    ScreenPtr pScreen = pWindow->drawable.pScreen;
-
-    RootlessStopDrawing(pWindow, FALSE);
-
-    if (REGION_NOTEMPTY(pScreen, &winRec->damage)) {
-        RL_DEBUG_MSG("Redisplay Win 0x%x, %i x %i @ (%i, %i)\n",
-                     pWindow, winRec->width, winRec->height,
-                     winRec->x, winRec->y);
-
-        // move region to window local coords
-        REGION_TRANSLATE(pScreen, &winRec->damage,
-                         -winRec->x, -winRec->y);
-
-        SCREENREC(pScreen)->imp->UpdateRegion(winRec->wid, &winRec->damage);
-
-        REGION_EMPTY(pScreen, &winRec->damage);
-    }
-
-#else   /* !ROOTLESS_TRACK_DAMAGE */
-
     RootlessStopDrawing(pWindow, TRUE);
-
-#endif
 }
-
 
 /*
  * RootlessRepositionWindows
@@ -447,7 +425,7 @@ RootlessRedisplay(WindowPtr pWindow)
 void
 RootlessRepositionWindows(ScreenPtr pScreen)
 {
-    WindowPtr root = WindowTable[pScreen->myNum];
+    WindowPtr root = pScreen->root;
     WindowPtr win;
 
     if (root != NULL) {
@@ -460,7 +438,6 @@ RootlessRepositionWindows(ScreenPtr pScreen)
     }
 }
 
-
 /*
  * RootlessRedisplayScreen
  *  Walk every window on a screen and redisplay the damaged regions.
@@ -468,7 +445,7 @@ RootlessRepositionWindows(ScreenPtr pScreen)
 void
 RootlessRedisplayScreen(ScreenPtr pScreen)
 {
-    WindowPtr root = WindowTable[pScreen->myNum];
+    WindowPtr root = pScreen->root;
 
     if (root != NULL) {
         WindowPtr win;

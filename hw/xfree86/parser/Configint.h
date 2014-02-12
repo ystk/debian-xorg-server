@@ -52,7 +52,6 @@
  * authorization from the copyright holder(s) and author(s).
  */
 
-
 /* 
  * These definitions are used through out the configuration file parser, but
  * they should not be visible outside of the parser.
@@ -73,14 +72,12 @@
 
 typedef enum { PARSE_DECIMAL, PARSE_OCTAL, PARSE_HEX } ParserNumType;
 
-typedef struct
-{
-	int num;		/* returned number */
-	char *str;		/* private copy of the return-string */
-	double realnum;		/* returned number as a real */
-        ParserNumType numType;  /* used to enforce correct number formatting */
-}
-LexRec, *LexPtr;
+typedef struct {
+    int num;                    /* returned number */
+    char *str;                  /* private copy of the return-string */
+    double realnum;             /* returned number as a real */
+    ParserNumType numType;      /* used to enforce correct number formatting */
+} LexRec, *LexPtr;
 
 #ifndef TRUE
 #define TRUE 1
@@ -98,14 +95,11 @@ LexRec, *LexPtr;
 #define parsePrologue(typeptr,typerec) typeptr ptr; \
 if( (ptr=calloc(1,sizeof(typerec))) == NULL ) { return NULL; }
 
-#define parsePrologueVoid(typeptr,typerec) int token; typeptr ptr; \
-if( (ptr=calloc(1,sizeof(typerec))) == NULL ) { return; }
-
 #define HANDLE_RETURN(f,func)\
 if ((ptr->f=func) == NULL)\
 {\
 	CLEANUP (ptr);\
-	return (NULL);\
+	return NULL;\
 }
 
 #define HANDLE_LIST(field,func,type)\
@@ -114,7 +108,7 @@ type p = func ();\
 if (p == NULL)\
 {\
 	CLEANUP (ptr);\
-	return (NULL);\
+	return NULL;\
 }\
 else\
 {\
@@ -122,8 +116,8 @@ else\
 }\
 }
 
-#define Error(a,b) do { \
-			xf86parseError (a, b); CLEANUP (ptr); return NULL; \
+#define Error(...) do { \
+		xf86parseError (__VA_ARGS__); CLEANUP (ptr); return NULL; \
 		   } while (0)
 
 /* 
@@ -148,12 +142,10 @@ else\
 "The %s keyword requires a number to follow it."
 #define POSITIVE_INT_MSG \
 "The %s keyword requires a positive integer to follow it."
+#define BOOL_MSG \
+"The %s keyword requires a boolean to follow it."
 #define ZAXISMAPPING_MSG \
 "The ZAxisMapping keyword requires 2 positive numbers or X or Y to follow it."
-#define AUTOREPEAT_MSG \
-"The AutoRepeat keyword requires 2 numbers (delay and rate) to follow it."
-#define XLEDS_MSG \
-"The XLeds keyword requries one or more numbers to follow it."
 #define DACSPEED_MSG \
 "The DacSpeed keyword must be followed by a list of up to %d numbers."
 #define DISPLAYSIZE_MSG \
@@ -214,7 +206,5 @@ else\
 /* Warning messages */
 #define OBSOLETE_MSG \
 "Ignoring obsolete keyword \"%s\"."
-#define MOVED_TO_FLAGS_MSG \
-"Keyword \"%s\" is now an Option flag in the ServerFlags section."
 
-#endif /* _Configint_h_ */
+#endif                          /* _Configint_h_ */

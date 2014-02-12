@@ -36,15 +36,12 @@
 
 #ifndef _DMXCONFIG_H_
 #define _DMXCONFIG_H_
-#define DMX_DEFAULT_XKB_RULES  "base"
-#define DMX_DEFAULT_XKB_MODEL  "pc101"
-#define DMX_DEFAULT_XKB_LAYOUT "us"
-#define DMX_DEFAULT_XKB_VARIANT NULL
-#define DMX_DEFAULT_XKB_OPTIONS NULL
+
+#include <xkb-config.h>
 
 extern void dmxConfigStoreDisplay(const char *display);
-extern void dmxConfigStoreInput(const char *input); /* Core devices */
-extern void dmxConfigStoreXInput(const char *input); /* Non-core devices */
+extern void dmxConfigStoreInput(const char *input);     /* Core devices */
+extern void dmxConfigStoreXInput(const char *input);    /* Non-core devices */
 extern void dmxConfigStoreFile(const char *file);
 extern void dmxConfigStoreConfig(const char *config);
 extern void dmxConfigConfigure(void);

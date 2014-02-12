@@ -6,7 +6,6 @@
 #define XAA_SCREEN_EPILOGUE(pScreen, field, wrapper)\
     ((pScreen)->field = wrapper)
 
-
 #define XAA_GC_FUNC_PROLOGUE(pGC)\
     XAAGCPtr pGCPriv = (XAAGCPtr)dixLookupPrivate(&(pGC)->devPrivates, XAAGetGCKey()); \
     (pGC)->funcs = pGCPriv->wrapFuncs;\
@@ -22,7 +21,6 @@
 				&XAAPixmapOps;\
     }
 
-
 #define XAA_GC_OP_PROLOGUE(pGC)\
     XAAGCPtr pGCPriv = (XAAGCPtr)dixLookupPrivate(&(pGC)->devPrivates, XAAGetGCKey()); \
     GCFuncs *oldFuncs = pGC->funcs;\
@@ -32,16 +30,14 @@
 #define XAA_GC_OP_PROLOGUE_WITH_RETURN(pGC)\
     XAAGCPtr pGCPriv = (XAAGCPtr)dixLookupPrivate(&(pGC)->devPrivates, XAAGetGCKey()); \
     GCFuncs *oldFuncs = pGC->funcs;\
-    if(!REGION_NUM_RECTS(pGC->pCompositeClip)) return; \
+    if(!RegionNumRects(pGC->pCompositeClip)) return; \
     pGC->funcs = pGCPriv->wrapFuncs;\
     pGC->ops = pGCPriv->wrapOps
 
-    
 #define XAA_GC_OP_EPILOGUE(pGC)\
     pGCPriv->wrapOps = pGC->ops;\
     pGC->funcs = oldFuncs;\
     pGC->ops   = pGCPriv->XAAOps
-
 
 #define XAA_PIXMAP_OP_PROLOGUE(pGC, pDraw)\
     XAAGCPtr pGCPriv = (XAAGCPtr)dixLookupPrivate(&(pGC)->devPrivates, XAAGetGCKey()); \
@@ -50,7 +46,7 @@
     pGC->funcs = pGCPriv->wrapFuncs;\
     pGC->ops = pGCPriv->wrapOps; \
     SYNC_CHECK(pGC)
-    
+
 #define XAA_PIXMAP_OP_EPILOGUE(pGC)\
     pGCPriv->wrapOps = pGC->ops;\
     pGC->funcs = oldFuncs;\
@@ -61,14 +57,12 @@
 #include <xorg-config.h>
 #endif
 
-#ifdef RENDER
 #define XAA_RENDER_PROLOGUE(pScreen,field)\
     (GetPictureScreen(pScreen)->field = \
      ((XAAScreenPtr)dixLookupPrivate(&(pScreen)->devPrivates, XAAGetScreenKey()))->field)
 
 #define XAA_RENDER_EPILOGUE(pScreen, field, wrapper)\
     (GetPictureScreen(pScreen)->field = wrapper)
-#endif
 
 /* This also works fine for drawables */
 

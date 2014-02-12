@@ -4,12 +4,12 @@
  * Derived from ts.c by Keith Packard
  * Derived from ps2.c by Jim Gettys
  *
- * Copyright © 1999 Keith Packard
- * Copyright © 2000 Compaq Computer Corporation
- * Copyright © 2002 MontaVista Software Inc.
- * Copyright © 2005 OpenedHand Ltd.
- * Copyright © 2006 Nokia Corporation
- * 
+ * Copyright Â© 1999 Keith Packard
+ * Copyright Â© 2000 Compaq Computer Corporation
+ * Copyright Â© 2002 MontaVista Software Inc.
+ * Copyright Â© 2005 OpenedHand Ltd.
+ * Copyright Â© 2006 Nokia Corporation
+ *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
@@ -30,7 +30,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 #ifdef HAVE_KDRIVE_CONFIG_H
 #include <kdrive-config.h>
 #endif
@@ -50,25 +49,24 @@ struct TslibPrivate {
     int fd;
     int lastx, lasty;
     struct tsdev *tsDev;
-    void (*raw_event_hook)(int x, int y, int pressure, void *closure);
+    void (*raw_event_hook) (int x, int y, int pressure, void *closure);
     void *raw_event_closure;
     int phys_screen;
 };
 
-
 static void
-TsRead (int fd, void *closure)
+TsRead(int fd, void *closure)
 {
-    KdPointerInfo       *pi = closure;
+    KdPointerInfo *pi = closure;
     struct TslibPrivate *private = pi->driverPrivate;
-    struct ts_sample    event;
-    long                x = 0, y = 0;
-    unsigned long       flags;
+    struct ts_sample event;
+    long x = 0, y = 0;
+    unsigned long flags;
 
     if (private->raw_event_hook) {
         while (ts_read_raw(private->tsDev, &event, 1) == 1)
-            private->raw_event_hook (event.x, event.y, event.pressure,
-                                     private->raw_event_closure);
+            private->raw_event_hook(event.x, event.y, event.pressure,
+                                    private->raw_event_closure);
         return;
     }
 
@@ -76,7 +74,7 @@ TsRead (int fd, void *closure)
         if (event.pressure) {
             flags = KD_BUTTON_1;
 
-            /* 
+            /*
              * Here we test for the touch screen driver actually being on the
              * touch screen, if it is we send absolute coordinates. If not,
              * then we send delta's so that we can track the entire vga screen.
@@ -84,30 +82,33 @@ TsRead (int fd, void *closure)
             if (KdCurScreen == private->phys_screen) {
                 x = event.x;
                 y = event.y;
-            } else {
+            }
+            else {
                 flags |= KD_MOUSE_DELTA;
                 if ((private->lastx == 0) || (private->lasty == 0)) {
                     x = event.x;
                     y = event.y;
-                } else {
+                }
+                else {
                     x = event.x - private->lastx;
                     y = event.y - private->lasty;
-	    	}
+                }
             }
             private->lastx = event.x;
             private->lasty = event.y;
-        } else {
+        }
+        else {
             flags = 0;
             x = private->lastx;
             y = private->lasty;
         }
 
-        KdEnqueuePointerEvent (pi, flags, x, y, event.pressure);
+        KdEnqueuePointerEvent(pi, flags, x, y, event.pressure);
     }
 }
 
 static Status
-TslibEnable (KdPointerInfo *pi)
+TslibEnable(KdPointerInfo * pi)
 {
     struct TslibPrivate *private = pi->driverPrivate;
 
@@ -115,25 +116,32 @@ TslibEnable (KdPointerInfo *pi)
     private->raw_event_closure = NULL;
     if (!pi->path) {
         pi->path = strdup("/dev/input/touchscreen0");
-        ErrorF("[tslib/TslibEnable] no device path given, trying %s\n", pi->path);
+        ErrorF("[tslib/TslibEnable] no device path given, trying %s\n",
+               pi->path);
     }
+
     private->tsDev = ts_open(pi->path, 0);
-    private->fd = ts_fd(private->tsDev);
-    if (!private->tsDev || ts_config(private->tsDev) || private->fd < 0) {
+    if (!private->tsDev) {
         ErrorF("[tslib/TslibEnable] failed to open %s\n", pi->path);
-        if (private->fd >= 0)
-            close(private->fd);
         return BadAlloc;
     }
 
+    if (ts_config(private->tsDev)) {
+        ErrorF("[tslib/TslibEnable] failed to load configuration\n");
+        ts_close(private->tsDev);
+        private->tsDev = NULL;
+        return BadValue;
+    }
+
+    private->fd = ts_fd(private->tsDev);
+
     KdRegisterFd(private->fd, TsRead, pi);
-  
+
     return Success;
 }
 
-
 static void
-TslibDisable (KdPointerInfo *pi)
+TslibDisable(KdPointerInfo * pi)
 {
     struct TslibPrivate *private = pi->driverPrivate;
 
@@ -147,17 +155,16 @@ TslibDisable (KdPointerInfo *pi)
     private->tsDev = NULL;
 }
 
-
 static Status
-TslibInit (KdPointerInfo *pi)
+TslibInit(KdPointerInfo * pi)
 {
     struct TslibPrivate *private = NULL;
 
     if (!pi || !pi->dixdev)
         return !Success;
-    
+
     pi->driverPrivate = (struct TslibPrivate *)
-                        xcalloc(sizeof(struct TslibPrivate), 1);
+        calloc(sizeof(struct TslibPrivate), 1);
     if (!pi->driverPrivate)
         return !Success;
 
@@ -171,16 +178,12 @@ TslibInit (KdPointerInfo *pi)
     return Success;
 }
 
-
 static void
-TslibFini (KdPointerInfo *pi)
+TslibFini(KdPointerInfo * pi)
 {
-    if (pi->driverPrivate) {
-        xfree(pi->driverPrivate);
-        pi->driverPrivate = NULL;
-    }
+    free(pi->driverPrivate);
+    pi->driverPrivate = NULL;
 }
-
 
 KdPointerDriver TsDriver = {
     "tslib",

@@ -1,6 +1,6 @@
 if INSTALL_LIBXF86CONFIG
 noinst_LTLIBRARIES = libxf86config_internal.la
-lib_LIBRARIES = libxf86config.a
+lib_LTLIBRARIES = libxf86config.la
 LIBHEADERS = \
 	xf86Optrec.h \
 	xf86Parser.h
@@ -13,6 +13,7 @@ INTERNAL_SOURCES= \
 	Files.c \
 	Flags.c \
 	Input.c \
+	InputClass.c \
 	Layout.c \
 	Module.c \
 	Video.c \
@@ -29,11 +30,15 @@ INTERNAL_SOURCES= \
 libxf86config_internal_la_SOURCES = \
 	$(INTERNAL_SOURCES)
 
-libxf86config_a_SOURCES = \
+libxf86config_la_SOURCES = \
+	$(top_srcdir)/os/xprintf.c \
 	$(INTERNAL_SOURCES)
-libxf86config_a_CFLAGS = $(AM_CFLAGS)
+libxf86config_la_CFLAGS = $(AM_CFLAGS)
+libxf86config_la_LDFLAGS = -static
 
-AM_CFLAGS = $(DIX_CFLAGS) $(XORG_CFLAGS)
+AM_CFLAGS = $(DIX_CFLAGS) $(XORG_CFLAGS) \
+	-DSYSCONFDIR=\"$(sysconfdir)\" \
+	-DDATADIR=\"$(datadir)\"
 
 EXTRA_DIST = \
 	Configint.h \
@@ -45,3 +50,5 @@ EXTRA_DIST = \
 sdk_HEADERS = \
 	xf86Parser.h \
 	xf86Optrec.h
+
+INCLUDES = -I$(srcdir)/../common

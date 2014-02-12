@@ -34,17 +34,19 @@
  */
 
 typedef struct {
-    GCPtr	    pBackingGC;	    /* Copy of the GC but with graphicsExposures
-				     * set FALSE and the clientClip set to
-				     * clip output to the valid regions of the
-				     * backing pixmap. */
-    unsigned long   serialNumber;   /* clientClip computed time */
-    unsigned long   stateChanges;   /* changes in parent gc since last copy */
-    GCOps	    *wrapOps;	    /* wrapped ops */
-    GCFuncs	    *wrapFuncs;	    /* wrapped funcs */
+    GCPtr pBackingGC;           /* Copy of the GC but with graphicsExposures
+                                 * set FALSE and the clientClip set to
+                                 * clip output to the valid regions of the
+                                 * backing pixmap. */
+    unsigned long serialNumber; /* clientClip computed time */
+    unsigned long stateChanges; /* changes in parent gc since last copy */
+    GCOps *wrapOps;             /* wrapped ops */
+    GCFuncs *wrapFuncs;         /* wrapped funcs */
 } cwGCRec, *cwGCPtr;
 
-extern _X_EXPORT DevPrivateKey cwGCKey;
+extern _X_EXPORT DevPrivateKeyRec cwGCKeyRec;
+
+#define cwGCKey (&cwGCKeyRec)
 
 #define getCwGC(pGC) ((cwGCPtr)dixLookupPrivate(&(pGC)->devPrivates, cwGCKey))
 #define setCwGC(pGC,p) dixSetPrivate(&(pGC)->devPrivates, cwGCKey, p)
@@ -55,17 +57,22 @@ extern _X_EXPORT DevPrivateKey cwGCKey;
  */
 
 typedef struct {
-    PicturePtr	    pBackingPicture;
-    unsigned long   serialNumber;
-    unsigned long   stateChanges;
+    PicturePtr pBackingPicture;
+    unsigned long serialNumber;
+    unsigned long stateChanges;
 } cwPictureRec, *cwPicturePtr;
+
+extern _X_EXPORT DevPrivateKeyRec cwPictureKeyRec;
+
+#define cwPictureKey (&cwPictureKeyRec)
 
 #define getCwPicture(pPicture) (pPicture->pDrawable ? \
     (cwPicturePtr)dixLookupPrivate(&(pPicture)->devPrivates, cwPictureKey) : 0)
 #define setCwPicture(pPicture,p) dixSetPrivate(&(pPicture)->devPrivates, cwPictureKey, p)
 
-extern _X_EXPORT DevPrivateKey cwPictureKey;
-extern _X_EXPORT DevPrivateKey cwWindowKey;
+extern _X_EXPORT DevPrivateKeyRec cwWindowKeyRec;
+
+#define cwWindowKey (&cwWindowKeyRec)
 
 #define cwWindowPrivate(pWin) dixLookupPrivate(&(pWin)->devPrivates, cwWindowKey)
 #define getCwPixmap(pWindow)	    ((PixmapPtr) cwWindowPrivate(pWindow))
@@ -80,37 +87,35 @@ typedef struct {
     /*
      * screen func wrappers
      */
-    CloseScreenProcPtr		CloseScreen;
-    GetImageProcPtr		GetImage;
-    GetSpansProcPtr		GetSpans;
-    CreateGCProcPtr		CreateGC;
+    CloseScreenProcPtr CloseScreen;
+    GetImageProcPtr GetImage;
+    GetSpansProcPtr GetSpans;
+    CreateGCProcPtr CreateGC;
 
-    CopyWindowProcPtr		CopyWindow;
+    CopyWindowProcPtr CopyWindow;
 
-    GetWindowPixmapProcPtr	GetWindowPixmap;
-    SetWindowPixmapProcPtr	SetWindowPixmap;
-    
-#ifdef RENDER
-    DestroyPictureProcPtr	DestroyPicture;
-    ChangePictureClipProcPtr	ChangePictureClip;
-    DestroyPictureClipProcPtr	DestroyPictureClip;
-    
-    ChangePictureProcPtr	ChangePicture;
-    ValidatePictureProcPtr	ValidatePicture;
+    GetWindowPixmapProcPtr GetWindowPixmap;
+    SetWindowPixmapProcPtr SetWindowPixmap;
 
-    CompositeProcPtr		Composite;
-    CompositeRectsProcPtr	CompositeRects;
+    DestroyPictureProcPtr DestroyPicture;
+    ChangePictureClipProcPtr ChangePictureClip;
+    DestroyPictureClipProcPtr DestroyPictureClip;
 
-    TrapezoidsProcPtr		Trapezoids;
-    TrianglesProcPtr		Triangles;
-    TriStripProcPtr		TriStrip;
-    TriFanProcPtr		TriFan;
+    ChangePictureProcPtr ChangePicture;
+    ValidatePictureProcPtr ValidatePicture;
 
-    RasterizeTrapezoidProcPtr	RasterizeTrapezoid;
-#endif
+    CompositeProcPtr Composite;
+    CompositeRectsProcPtr CompositeRects;
+
+    TrapezoidsProcPtr Trapezoids;
+    TrianglesProcPtr Triangles;
+
+    RasterizeTrapezoidProcPtr RasterizeTrapezoid;
 } cwScreenRec, *cwScreenPtr;
 
-extern _X_EXPORT DevPrivateKey cwScreenKey;
+extern _X_EXPORT DevPrivateKeyRec cwScreenKeyRec;
+
+#define cwScreenKey (&cwScreenKeyRec)
 
 #define getCwScreen(pScreen) ((cwScreenPtr)dixLookupPrivate(&(pScreen)->devPrivates, cwScreenKey))
 #define setCwScreen(pScreen,p) dixSetPrivate(&(pScreen)->devPrivates, cwScreenKey, p)
@@ -152,17 +157,17 @@ extern _X_EXPORT DevPrivateKey cwScreenKey;
 
 /* cw.c */
 extern _X_EXPORT DrawablePtr
-cwGetBackingDrawable(DrawablePtr pDrawable, int *x_off, int *y_off);
+ cwGetBackingDrawable(DrawablePtr pDrawable, int *x_off, int *y_off);
 
 /* cw_render.c */
 
 extern _X_EXPORT void
-cwInitializeRender (ScreenPtr pScreen);
+ cwInitializeRender(ScreenPtr pScreen);
 
 extern _X_EXPORT void
-cwFiniRender (ScreenPtr pScreen);
+ cwFiniRender(ScreenPtr pScreen);
 
 /* cw.c */
 
 extern _X_EXPORT void
-miInitializeCompositeWrapper(ScreenPtr pScreen);
+ miInitializeCompositeWrapper(ScreenPtr pScreen);

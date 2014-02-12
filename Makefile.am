@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS=dist-bzip2 foreign nostdinc
+AUTOMAKE_OPTIONS=nostdinc
 ACLOCAL_AMFLAGS = -I m4
 
 if COMPOSITE
@@ -19,6 +19,7 @@ endif
 
 SUBDIRS = \
 	doc \
+	man \
 	include \
 	dix  \
 	fb \
@@ -49,25 +50,26 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = xorg-server.pc
 endif
 
-EXTRA_DIST = xorg-server.pc.in xorg-server.m4 ChangeLog autogen.sh
+EXTRA_DIST = xorg-server.pc.in xorg-server.m4 autogen.sh
 
 DISTCHECK_CONFIGURE_FLAGS=\
 	--with-xkb-path=$(XKB_BASE_DIRECTORY) \
 	--with-xkb-bin-directory=$(XKB_BIN_DIRECTORY) \
 	--with-xkb-output='$${datadir}/X11/xkb/compiled'
 
-DISTCLEANFILES = doltcompile doltlibtool
-MAINTAINERCLEANFILES=ChangeLog
+.PHONY: ChangeLog INSTALL
 
-.PHONY: ChangeLog
+INSTALL:
+	$(INSTALL_CMD)
 
 ChangeLog:
 	$(CHANGELOG_CMD)
 
-dist-hook: ChangeLog
+dist-hook: ChangeLog INSTALL
 
 DIST_SUBDIRS = \
 	doc \
+	man \
 	include \
 	dix  \
 	fb \
@@ -92,4 +94,11 @@ DIST_SUBDIRS = \
 
 # gross hack
 relink: all
-	$(MAKE) -C hw relink
+	$(AM_V_at)$(MAKE) -C hw relink
+
+install-headers: Makefile
+	+find . -name Makefile | while read m; do			\
+		if grep -q install-sdkHEADERS $$m; then			\
+			(cd `dirname "$$m"` && make install-sdkHEADERS)	\
+		fi							\
+	done

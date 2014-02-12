@@ -1,5 +1,5 @@
 /*
- * Copyright © 1999 Keith Packard
+ * Copyright Â© 1999 Keith Packard
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -25,22 +25,19 @@
 #endif
 #include "kdrive.h"
 
-KdCardInfo  *kdCardInfo;
+KdCardInfo *kdCardInfo;
 
 KdCardInfo *
-KdCardInfoAdd (KdCardFuncs  *funcs,
-	       KdCardAttr   *attr,
-	       void	    *closure)
+KdCardInfoAdd(KdCardFuncs * funcs, void *closure)
 {
-    KdCardInfo	*ci, **prev;
+    KdCardInfo *ci, **prev;
 
-    ci = xcalloc (1, sizeof (KdCardInfo));
+    ci = calloc(1, sizeof(KdCardInfo));
     if (!ci)
-	return 0;
+        return 0;
     for (prev = &kdCardInfo; *prev; prev = &(*prev)->next);
     *prev = ci;
     ci->cfuncs = funcs;
-    ci->attr = *attr;
     ci->closure = closure;
     ci->screenList = 0;
     ci->selected = 0;
@@ -49,39 +46,38 @@ KdCardInfoAdd (KdCardFuncs  *funcs,
 }
 
 KdCardInfo *
-KdCardInfoLast (void)
+KdCardInfoLast(void)
 {
-    KdCardInfo	*ci;
+    KdCardInfo *ci;
 
     if (!kdCardInfo)
-	return 0;
+        return 0;
     for (ci = kdCardInfo; ci->next; ci = ci->next);
     return ci;
 }
 
 void
-KdCardInfoDispose (KdCardInfo *ci)
+KdCardInfoDispose(KdCardInfo * ci)
 {
-    KdCardInfo	**prev;
+    KdCardInfo **prev;
 
     for (prev = &kdCardInfo; *prev; prev = &(*prev)->next)
-	if (*prev == ci)
-	{
-	    *prev = ci->next;
-	    xfree (ci);
-	    break;
-	}
+        if (*prev == ci) {
+            *prev = ci->next;
+            free(ci);
+            break;
+        }
 }
 
 KdScreenInfo *
-KdScreenInfoAdd (KdCardInfo *ci)
+KdScreenInfoAdd(KdCardInfo * ci)
 {
-    KdScreenInfo    *si, **prev;
-    int		    n;
+    KdScreenInfo *si, **prev;
+    int n;
 
-    si = xcalloc (1, sizeof (KdScreenInfo));
+    si = calloc(1, sizeof(KdScreenInfo));
     if (!si)
-	return 0;
+        return 0;
     for (prev = &ci->screenList, n = 0; *prev; prev = &(*prev)->next, n++);
     *prev = si;
     si->next = 0;
@@ -91,30 +87,29 @@ KdScreenInfoAdd (KdCardInfo *ci)
 }
 
 void
-KdScreenInfoDispose (KdScreenInfo *si)
+KdScreenInfoDispose(KdScreenInfo * si)
 {
-    KdCardInfo	    *ci = si->card;
-    KdScreenInfo    **prev;
+    KdCardInfo *ci = si->card;
+    KdScreenInfo **prev;
 
     for (prev = &ci->screenList; *prev; prev = &(*prev)->next) {
-	if (*prev == si)
-	{
-	    *prev = si->next;
-	    xfree (si);
-	    if (!ci->screenList)
-		KdCardInfoDispose (ci);
-	    break;
-	}
+        if (*prev == si) {
+            *prev = si->next;
+            free(si);
+            if (!ci->screenList)
+                KdCardInfoDispose(ci);
+            break;
+        }
     }
 }
 
 KdPointerInfo *
-KdNewPointer (void)
+KdNewPointer(void)
 {
     KdPointerInfo *pi;
     int i;
 
-    pi = (KdPointerInfo *)xcalloc(1, sizeof(KdPointerInfo));
+    pi = (KdPointerInfo *) calloc(1, sizeof(KdPointerInfo));
     if (!pi)
         return NULL;
 
@@ -134,44 +129,22 @@ KdNewPointer (void)
 }
 
 void
-KdFreePointer(KdPointerInfo *pi)
+KdFreePointer(KdPointerInfo * pi)
 {
-    InputOption *option, *prev = NULL;
-
-    if (pi->name)
-        xfree(pi->name);
-    if (pi->path)
-        xfree(pi->path);
-
-    for (option = pi->options; option; option = option->next) {
-        if (prev)
-            xfree(prev);
-        if (option->key)
-            xfree(option->key);
-        if (option->value)
-            xfree(option->value);
-        prev = option;
-    }
-
-    if (prev)
-        xfree(prev);
-    
-    xfree(pi);
+    free(pi->name);
+    free(pi->path);
+    input_option_free_list(&pi->options);
+    free(pi);
 }
- 
+
 void
-KdFreeKeyboard(KdKeyboardInfo *ki)
+KdFreeKeyboard(KdKeyboardInfo * ki)
 {
-    if (ki->name)
-        xfree(ki->name);
-    if (ki->path)
-        xfree(ki->path);
-    if (ki->xkbRules)
-        xfree(ki->xkbRules);
-    if (ki->xkbModel)
-        xfree(ki->xkbModel);
-    if (ki->xkbLayout)
-        xfree(ki->xkbLayout);
+    free(ki->name);
+    free(ki->path);
+    free(ki->xkbRules);
+    free(ki->xkbModel);
+    free(ki->xkbLayout);
     ki->next = NULL;
-    xfree(ki);
+    free(ki);
 }

@@ -41,61 +41,61 @@ from The Open Group.
 #include "servermd.h"
 #include "site.h"
 
-
 /*
  *  Scratch pixmap management and device independent pixmap allocation
  *  function.
  */
 
-
 /* callable by ddx */
 PixmapPtr
-GetScratchPixmapHeader(ScreenPtr pScreen, int width, int height, int depth, 
+GetScratchPixmapHeader(ScreenPtr pScreen, int width, int height, int depth,
                        int bitsPerPixel, int devKind, pointer pPixData)
 {
     PixmapPtr pPixmap = pScreen->pScratchPixmap;
 
     if (pPixmap)
-	pScreen->pScratchPixmap = NULL;
+        pScreen->pScratchPixmap = NULL;
     else
-	/* width and height of 0 means don't allocate any pixmap data */
-	pPixmap = (*pScreen->CreatePixmap)(pScreen, 0, 0, depth, 0);
+        /* width and height of 0 means don't allocate any pixmap data */
+        pPixmap = (*pScreen->CreatePixmap) (pScreen, 0, 0, depth, 0);
 
     if (pPixmap) {
-	if ((*pScreen->ModifyPixmapHeader)(pPixmap, width, height, depth,
-					   bitsPerPixel, devKind, pPixData))
-	    return pPixmap;
-	(*pScreen->DestroyPixmap)(pPixmap);
+        if ((*pScreen->ModifyPixmapHeader) (pPixmap, width, height, depth,
+                                            bitsPerPixel, devKind, pPixData))
+            return pPixmap;
+        (*pScreen->DestroyPixmap) (pPixmap);
     }
     return NullPixmap;
 }
-
 
 /* callable by ddx */
 void
 FreeScratchPixmapHeader(PixmapPtr pPixmap)
 {
-    if (pPixmap)
-    {
-	ScreenPtr pScreen = pPixmap->drawable.pScreen;
+    if (pPixmap) {
+        ScreenPtr pScreen = pPixmap->drawable.pScreen;
 
-	pPixmap->devPrivate.ptr = NULL; /* lest ddx chases bad ptr */
-	if (pScreen->pScratchPixmap)
-	    (*pScreen->DestroyPixmap)(pPixmap);
-	else
-	    pScreen->pScratchPixmap = pPixmap;
+        pPixmap->devPrivate.ptr = NULL; /* lest ddx chases bad ptr */
+        if (pScreen->pScratchPixmap)
+            (*pScreen->DestroyPixmap) (pPixmap);
+        else
+            pScreen->pScratchPixmap = pPixmap;
     }
 }
-
 
 Bool
 CreateScratchPixmapsForScreen(int scrnum)
 {
+    unsigned int pixmap_size;
+
+    pixmap_size = sizeof(PixmapRec) + dixPrivatesSize(PRIVATE_PIXMAP);
+    screenInfo.screens[scrnum]->totalPixmapSize =
+        BitmapBytePad(pixmap_size * 8);
+
     /* let it be created on first use */
     screenInfo.screens[scrnum]->pScratchPixmap = NULL;
     return TRUE;
 }
-
 
 void
 FreeScratchPixmapsForScreen(int scrnum)
@@ -103,20 +103,29 @@ FreeScratchPixmapsForScreen(int scrnum)
     FreeScratchPixmapHeader(screenInfo.screens[scrnum]->pScratchPixmap);
 }
 
-
 /* callable by ddx */
 PixmapPtr
 AllocatePixmap(ScreenPtr pScreen, int pixDataSize)
 {
     PixmapPtr pPixmap;
 
-    if (pScreen->totalPixmapSize > ((size_t)-1) - pixDataSize)
-	return NullPixmap;
-    
-    pPixmap = xalloc(pScreen->totalPixmapSize + pixDataSize);
-    if (!pPixmap)
-	return NullPixmap;
+    assert(pScreen->totalPixmapSize > 0);
 
-    pPixmap->devPrivates = NULL;
+    if (pScreen->totalPixmapSize > ((size_t) - 1) - pixDataSize)
+        return NullPixmap;
+
+    pPixmap = malloc(pScreen->totalPixmapSize + pixDataSize);
+    if (!pPixmap)
+        return NullPixmap;
+
+    dixInitPrivates(pPixmap, pPixmap + 1, PRIVATE_PIXMAP);
     return pPixmap;
+}
+
+/* callable by ddx */
+void
+FreePixmap(PixmapPtr pPixmap)
+{
+    dixFiniPrivates(pPixmap, PRIVATE_PIXMAP);
+    free(pPixmap);
 }
