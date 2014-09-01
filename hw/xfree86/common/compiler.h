@@ -103,6 +103,7 @@
 #if !defined(__sparc__) && !defined(__sparc) && !defined(__arm32__) && !defined(__nds32__) \
       && !(defined(__alpha__) && defined(linux)) \
       && !(defined(__ia64__) && defined(linux)) \
+      && !(defined(__mips64) && defined(linux)) \
 
 extern _X_EXPORT void outb(unsigned short, unsigned char);
 extern _X_EXPORT void outw(unsigned short, unsigned short);
@@ -119,6 +120,23 @@ extern _X_EXPORT unsigned int inb(unsigned long);
 extern _X_EXPORT unsigned int inw(unsigned long);
 extern _X_EXPORT unsigned int inl(unsigned long);
 
+#ifdef __SUNPRO_C
+extern _X_EXPORT unsigned char  xf86ReadMmio8    (void *, unsigned long);
+extern _X_EXPORT unsigned short xf86ReadMmio16Be (void *, unsigned long);
+extern _X_EXPORT unsigned short xf86ReadMmio16Le (void *, unsigned long);
+extern _X_EXPORT unsigned int   xf86ReadMmio32Be (void *, unsigned long);
+extern _X_EXPORT unsigned int   xf86ReadMmio32Le (void *, unsigned long);
+extern _X_EXPORT void xf86WriteMmio8    (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio16Be (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio16Le (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio32Be (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio32Le (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio8NB    (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio16BeNB (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio16LeNB (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio32BeNB (void *, unsigned long, unsigned int);
+extern _X_EXPORT void xf86WriteMmio32LeNB (void *, unsigned long, unsigned int);
+#endif                          /* _SUNPRO_C */
 #endif                          /* __sparc__,  __arm32__, __alpha__, __nds32__ */
 #endif                          /* __arm__ */
 
@@ -704,7 +722,7 @@ xf86WriteMmio32LeNB(__volatile__ void *base, const unsigned long offset,
 }
 
 #elif defined(__mips__) || (defined(__arm32__) && !defined(__linux__))
-#ifdef __arm32__
+#if defined(__arm32__) || defined(__mips64)
 #define PORT_SIZE long
 #else
 #define PORT_SIZE short
@@ -1334,7 +1352,10 @@ stl_u(unsigned long val, unsigned int *p)
 #else                           /* ix86 */
 
 #if !defined(__SUNPRO_C)
-#if !defined(FAKEIT) && !defined(__mc68000__) && !defined(__arm__) && !defined(__sh__) && !defined(__hppa__) && !defined(__s390__) && !defined(__m32r__)
+#if !defined(FAKEIT) && !defined(__mc68000__) && !defined(__arm__) && \
+    !defined(__sh__) && !defined(__hppa__) && !defined(__s390__) && \
+    !defined(__m32r__) && !defined(__aarch64__) && !defined(__arc__) && \
+    !defined(__xtensa__)
 #ifdef GCCUSESGAS
 
 /*
@@ -1436,7 +1457,7 @@ inl(unsigned short port)
 
 #endif                          /* GCCUSESGAS */
 
-#else                           /* !defined(FAKEIT) && !defined(__mc68000__)  && !defined(__arm__) && !defined(__sh__) && !defined(__hppa__) && !defined(__m32r__) */
+#else                           /* !defined(FAKEIT) && !defined(__mc68000__)  && !defined(__arm__) && !defined(__sh__) && !defined(__hppa__) && !defined(__m32r__) && !defined(__arc__) */
 
 static __inline__ void
 outb(unsigned short port, unsigned char val)

@@ -24,6 +24,9 @@
 /* Prefix to use for bundle identifiers */
 #undef BUNDLE_ID_PREFIX
 
+/* Include busfault OS API */
+#undef BUSFAULT
+
 /* Support client ID tracking */
 #undef CLIENTIDS
 
@@ -33,17 +36,14 @@
 /* Support Composite Extension */
 #undef COMPOSITE
 
-/* Use the D-Bus input configuration API */
-#undef CONFIG_DBUS_API
-
 /* Use the HAL hotplug API */
 #undef CONFIG_HAL
 
-/* Use D-Bus for input hotplug */
-#undef CONFIG_NEED_DBUS
-
 /* Use libudev for input hotplug */
 #undef CONFIG_UDEV
+
+/* Use libudev for kms enumeration */
+#undef CONFIG_UDEV_KMS
 
 /* Use wscons for input auto configuration */
 #undef CONFIG_WSCONS
@@ -81,11 +81,17 @@
 /* Default log location */
 #undef DEFAULT_LOGDIR
 
-/* Default log location */
+/* Default logfile prefix */
 #undef DEFAULT_LOGPREFIX
 
 /* Default module search path */
 #undef DEFAULT_MODULE_PATH
+
+/* Default XDG_DATA dir under HOME */
+#undef DEFAULT_XDG_DATA_HOME
+
+/* Default log dir under XDG_DATA_HOME */
+#undef DEFAULT_XDG_DATA_HOME_LOGDIR
 
 /* Support DGA extension */
 #undef DGA
@@ -99,8 +105,17 @@
 /* Build DRI2 AIGLX loader */
 #undef DRI2_AIGLX
 
+/* Build DRI3 extension */
+#undef DRI3
+
 /* Default DRI driver path */
 #undef DRI_DRIVER_PATH
+
+/* Build glamor */
+#undef GLAMOR
+
+/* Build glamor with GBM-based EGL support */
+#undef GLAMOR_HAS_GBM
 
 /* Build GLX extension */
 #undef GLXEXT
@@ -214,6 +229,9 @@
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
 
+/* Have libunwind support */
+#undef HAVE_LIBUNWIND
+
 /* Define to 1 if you have the `ws2_32' library (-lws2_32). */
 #undef HAVE_LIBWS2_32
 
@@ -244,8 +262,14 @@
 /* Define to 1 if you have the <rpcsvc/dbm.h> header file. */
 #undef HAVE_RPCSVC_DBM_H
 
+/* Define to 1 if you have the `seteuid' function. */
+#undef HAVE_SETEUID
+
 /* Use CommonCrypto SHA1 functions */
 #undef HAVE_SHA1_IN_COMMONCRYPTO
+
+/* Use CryptoAPI SHA1 functions */
+#undef HAVE_SHA1_IN_CRYPTOAPI
 
 /* Use libc SHA1 functions */
 #undef HAVE_SHA1_IN_LIBC
@@ -256,11 +280,17 @@
 /* Use libmd SHA1 functions */
 #undef HAVE_SHA1_IN_LIBMD
 
+/* Use libnettle SHA1 functions */
+#undef HAVE_SHA1_IN_LIBNETTLE
+
 /* Use libsha1 for SHA1 */
 #undef HAVE_SHA1_IN_LIBSHA1
 
 /* Define to 1 if you have the `shmctl64' function. */
 #undef HAVE_SHMCTL64
+
+/* Have sigaction function */
+#undef HAVE_SIGACTION
 
 /* Define to 1 if the system has the type `socklen_t'. */
 #undef HAVE_SOCKLEN_T
@@ -298,6 +328,9 @@
 /* Define to 1 if you have the <stropts.h> header file. */
 #undef HAVE_STROPTS_H
 
+/* Define to 1 if libsystemd-daemon is available */
+#undef HAVE_SYSTEMD_DAEMON
+
 /* Define to 1 if SYSV IPC is available */
 #undef HAVE_SYSV_IPC
 
@@ -320,6 +353,9 @@
 /* Define to 1 if you have the <sys/memrange.h> header file. */
 #undef HAVE_SYS_MEMRANGE_H
 
+/* Define to 1 if you have the <sys/mkdev.h> header file. */
+#undef HAVE_SYS_MKDEV_H
+
 /* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
    */
 #undef HAVE_SYS_NDIR_H
@@ -335,6 +371,9 @@
 
 /* Define to 1 if you have the <sys/vt.h> header file. */
 #undef HAVE_SYS_VT_H
+
+/* Define to 1 if typeof works with your compiler. */
+#undef HAVE_TYPEOF
 
 /* Define to 1 if you have the `udev_enumerate_add_match_tag' function. */
 #undef HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG
@@ -354,6 +393,9 @@
 
 /* Define to 1 if you have the `walkcontext' function. */
 #undef HAVE_WALKCONTEXT
+
+/* Have X Shared Memory Fence library */
+#undef HAVE_XSHMFENCE
 
 /* Support IPv6 for TCP connections */
 #undef IPv6
@@ -388,6 +430,9 @@
 
 /* Have monotonic clock from clock_gettime() */
 #undef MONOTONIC_CLOCK
+
+/* Enable D-Bus core */
+#undef NEED_DBUS
 
 /* Need XFree86 helper functions */
 #undef NEED_XF86_PROTOTYPES
@@ -446,6 +491,9 @@
 /* System has PC console */
 #undef PCVT_SUPPORT
 
+/* Support Present extension */
+#undef PRESENT
+
 /* Overall prefix */
 #undef PROJECTROOT
 
@@ -460,9 +508,6 @@
 
 /* Support X resource extension */
 #undef RES
-
-/* Define as the return type of signal handlers (`int' or `void'). */
-#undef RETSIGTYPE
 
 /* Build Rootless code */
 #undef ROOTLESS
@@ -479,6 +524,9 @@
 /* Support SHAPE extension */
 #undef SHAPE
 
+/* Directory for shared memory temp files */
+#undef SHMDIR
+
 /* The size of `unsigned long', as computed by sizeof. */
 #undef SIZEOF_UNSIGNED_LONG
 
@@ -488,14 +536,20 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Where to install Xorg.bin and Xorg.wrap */
+#undef SUID_WRAPPER_DIR
+
 /* Define to 1 on systems derived from System V Release 4 */
 #undef SVR4
 
-/* Location of system.XWinrc */
+/* sysconfdir */
 #undef SYSCONFDIR
 
 /* System has syscons console */
 #undef SYSCONS_SUPPORT
+
+/* Enable systemd-logind integration */
+#undef SYSTEMD_LOGIND
 
 /* Support TCP socket connections */
 #undef TCPCONN
@@ -524,6 +578,28 @@
 
 /* Use SIGIO handlers for input device events by default */
 #undef USE_SIGIO_BY_DEFAULT
+
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# undef __EXTENSIONS__
+#endif
+
 
 /* Define to use byteswap macros from <sys/endian.h> */
 #undef USE_SYS_ENDIAN_H
@@ -585,14 +661,14 @@
 /* Build DRI extension */
 #undef XF86DRI
 
+/* Support APM/ACPI power management in the server */
+#undef XF86PM
+
 /* Support XFree86 Video Mode extension */
 #undef XF86VIDMODE
 
 /* Support XFixes extension */
 #undef XFIXES
-
-/* Building loadable XFree86 server */
-#undef XFree86LOADER
 
 /* Building XFree86 server */
 #undef XFree86Server
@@ -666,11 +742,17 @@
 /* Use libpciaccess for all pci manipulation */
 #undef XSERVER_LIBPCIACCESS
 
+/* X server supports platform device enumeration */
+#undef XSERVER_PLATFORM_BUS
+
 /* Support XSync extension */
 #undef XSYNC
 
 /* Support XTest extension */
 #undef XTEST
+
+/* Enable xtrans fd passing support */
+#undef XTRANS_SEND_FDS
 
 /* Support Xv extension */
 #undef XV
@@ -705,6 +787,19 @@
 /* Define for large files, on AIX-style hosts. */
 #undef _LARGE_FILES
 
+/* Define to 1 if on MINIX. */
+#undef _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#undef _POSIX_1_SOURCE
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#undef _POSIX_SOURCE
+
+/* Defined if needed to expose struct msghdr.msg_control */
+#undef _XOPEN_SOURCE
+
 /* Define to 1 if unsigned long is 64 bits. */
 #undef _XSERVER64
 
@@ -734,3 +829,6 @@
 
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t
+
+/* Define to __typeof__ if your compiler spells it that way. */
+#undef typeof

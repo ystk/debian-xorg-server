@@ -65,7 +65,7 @@ shadowRedisplay(ScreenPtr pScreen)
 }
 
 static void
-shadowBlockHandler(pointer data, OSTimePtr pTimeout, pointer pRead)
+shadowBlockHandler(void *data, OSTimePtr pTimeout, void *pRead)
 {
     ScreenPtr pScreen = (ScreenPtr) data;
 
@@ -73,7 +73,7 @@ shadowBlockHandler(pointer data, OSTimePtr pTimeout, pointer pRead)
 }
 
 static void
-shadowWakeupHandler(pointer data, int i, pointer LastSelectMask)
+shadowWakeupHandler(void *data, int i, void *LastSelectMask)
 {
 }
 
@@ -96,7 +96,7 @@ shadowGetImage(DrawablePtr pDrawable, int sx, int sy, int w, int h,
 #define BACKWARDS_COMPATIBILITY
 
 static Bool
-shadowCloseScreen(int i, ScreenPtr pScreen)
+shadowCloseScreen(ScreenPtr pScreen)
 {
     shadowBuf(pScreen);
 
@@ -110,7 +110,7 @@ shadowCloseScreen(int i, ScreenPtr pScreen)
     if (pBuf->pPixmap)
         pScreen->DestroyPixmap(pBuf->pPixmap);
     free(pBuf);
-    return pScreen->CloseScreen(i, pScreen);
+    return pScreen->CloseScreen(pScreen);
 }
 
 #ifdef BACKWARDS_COMPATIBILITY
@@ -183,7 +183,7 @@ shadowAdd(ScreenPtr pScreen, PixmapPtr pPixmap, ShadowUpdateProc update,
     shadowBuf(pScreen);
 
     if (!RegisterBlockAndWakeupHandlers(shadowBlockHandler, shadowWakeupHandler,
-                                        (pointer) pScreen))
+                                        (void *) pScreen))
         return FALSE;
 
     /*
@@ -219,7 +219,7 @@ shadowRemove(ScreenPtr pScreen, PixmapPtr pPixmap)
     shadowBuf(pScreen);
 
     if (pBuf->pPixmap) {
-        DamageUnregister(&pBuf->pPixmap->drawable, pBuf->pDamage);
+        DamageUnregister(pBuf->pDamage);
         pBuf->update = 0;
         pBuf->window = 0;
         pBuf->randr = 0;
@@ -228,7 +228,7 @@ shadowRemove(ScreenPtr pScreen, PixmapPtr pPixmap)
     }
 
     RemoveBlockAndWakeupHandlers(shadowBlockHandler, shadowWakeupHandler,
-                                 (pointer) pScreen);
+                                 (void *) pScreen);
 }
 
 Bool

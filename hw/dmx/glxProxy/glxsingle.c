@@ -147,9 +147,9 @@ SendSwappedReply(ClientPtr client,
 
     }
 
-    WriteToClient(client, sizeof(xGLXSingleReply), (char *) reply);
+    WriteToClient(client, sizeof(xGLXSingleReply), reply);
     if (buf_size > 0)
-        WriteToClient(client, buf_size, (char *) buf);
+        WriteToClient(client, buf_size, buf);
 
 }
 
@@ -249,7 +249,7 @@ __glXForwardPipe0WithReply(__GLXclientState * cl, GLbyte * pc)
     /*
      * get the reply from the back-end server
      */
-    _XReply(dpy, (xReply *) & be_reply, 0, False);
+    _XReply(dpy, (xReply *) &be_reply, 0, False);
     be_buf_size = be_reply.length << 2;
     if (be_buf_size > 0) {
         be_buf = (char *) malloc(be_buf_size);
@@ -258,7 +258,7 @@ __glXForwardPipe0WithReply(__GLXclientState * cl, GLbyte * pc)
         }
         else {
             /* Throw data on the floor */
-            _XEatData(dpy, be_buf_size);
+            _XEatDataWords(dpy, be_reply.length);
             return BadAlloc;
         }
     }
@@ -269,21 +269,23 @@ __glXForwardPipe0WithReply(__GLXclientState * cl, GLbyte * pc)
     /*
      * send the reply to the client
      */
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.length = be_reply.length;
-    reply.retval = be_reply.retval;
-    reply.size = be_reply.size;
-    reply.pad3 = be_reply.pad3;
-    reply.pad4 = be_reply.pad4;
+    reply = (xGLXSingleReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = be_reply.length,
+        .retval = be_reply.retval,
+        .size = be_reply.size,
+        .pad3 = be_reply.pad3,
+        .pad4 = be_reply.pad4
+    };
 
     if (client->swapped) {
         SendSwappedReply(client, &reply, be_buf, be_buf_size);
     }
     else {
-        WriteToClient(client, sizeof(xGLXSingleReply), (char *) &reply);
+        WriteToClient(client, sizeof(xGLXSingleReply), &reply);
         if (be_buf_size > 0)
-            WriteToClient(client, be_buf_size, (char *) be_buf);
+            WriteToClient(client, be_buf_size, be_buf);
     }
 
     if (be_buf_size > 0)
@@ -346,46 +348,52 @@ __glXForwardAllWithReply(__GLXclientState * cl, GLbyte * pc)
         /*
          * get the reply from the back-end server
          */
-        _XReply(dpy, (xReply *) & be_reply, 0, False);
-        be_buf_size = be_reply.length << 2;
-        if (be_buf_size > 0) {
-            be_buf = (char *) malloc(be_buf_size);
-            if (be_buf) {
-                _XRead(dpy, be_buf, be_buf_size);
+        _XReply(dpy, (xReply *) &be_reply, 0, False);
+        if (s == from_screen) {
+            /* Save data from last reply to send on to client */
+            be_buf_size = be_reply.length << 2;
+            if (be_buf_size > 0) {
+                be_buf = malloc(be_buf_size);
+                if (be_buf) {
+                    _XRead(dpy, be_buf, be_buf_size);
+                }
+                else {
+                    /* Throw data on the floor */
+                    _XEatDataWords(dpy, be_reply.length);
+                    return BadAlloc;
+                }
             }
-            else {
-                /* Throw data on the floor */
-                _XEatData(dpy, be_buf_size);
-                return BadAlloc;
-            }
+        }
+        else {
+            /* Just discard data from all replies before the last one */
+            if (be_reply.length > 0)
+                _XEatDataWords(dpy, be_reply.length);
         }
 
         UnlockDisplay(dpy);
         SyncHandle();
-
-        if (s > from_screen && be_buf_size > 0) {
-            free(be_buf);
-        }
     }
 
     /*
      * send the reply to the client
      */
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.length = be_reply.length;
-    reply.retval = be_reply.retval;
-    reply.size = be_reply.size;
-    reply.pad3 = be_reply.pad3;
-    reply.pad4 = be_reply.pad4;
+    reply = (xGLXSingleReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = be_reply.length,
+        .retval = be_reply.retval,
+        .size = be_reply.size,
+        .pad3 = be_reply.pad3,
+        .pad4 = be_reply.pad4
+    };
 
     if (client->swapped) {
         SendSwappedReply(client, &reply, be_buf, be_buf_size);
     }
     else {
-        WriteToClient(client, sizeof(xGLXSingleReply), (char *) &reply);
+        WriteToClient(client, sizeof(xGLXSingleReply), &reply);
         if (be_buf_size > 0)
-            WriteToClient(client, be_buf_size, (char *) be_buf);
+            WriteToClient(client, be_buf_size, be_buf);
     }
 
     if (be_buf_size > 0)
@@ -915,7 +923,7 @@ __glXDisp_ReadPixels(__GLXclientState * cl, GLbyte * pc)
                 *(GLboolean *) (be_pc + 24) = swapBytes;
                 *(GLboolean *) (be_pc + 25) = lsbFirst;
 
-                _XReply(dpy, (xReply *) & be_reply, 0, False);
+                _XReply(dpy, (xReply *) &be_reply, 0, False);
 
                 if (be_reply.length > 0) {
                     char *be_buf;
@@ -989,7 +997,7 @@ __glXDisp_ReadPixels(__GLXclientState * cl, GLbyte * pc)
                     }
                     else {
                         /* Throw data on the floor */
-                        _XEatData(dpy, be_buf_size);
+                        _XEatDataWords(dpy, be_reply.length);
                         free(buf);
                         return BadAlloc;
                     }
@@ -1004,18 +1012,20 @@ __glXDisp_ReadPixels(__GLXclientState * cl, GLbyte * pc)
 
     }                           /* of if buf_size > 0 */
 
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.length = buf_size >> 2;
+    reply = (xGLXReadPixelsReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = buf_size >> 2
+    };
 
     if (client->swapped) {
         __GLX_SWAP_SHORT(&reply.sequenceNumber);
         __GLX_SWAP_INT(&reply.length);
     }
 
-    WriteToClient(client, sizeof(xGLXReadPixelsReply), (char *) &reply);
+    WriteToClient(client, sizeof(xGLXReadPixelsReply), &reply);
     if (buf_size > 0) {
-        WriteToClient(client, buf_size, (char *) buf);
+        WriteToClient(client, buf_size, buf);
         free(buf);
     }
 

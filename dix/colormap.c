@@ -367,7 +367,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
     }
     pmap->flags |= BeingCreated;
 
-    if (!AddResource(mid, RT_COLORMAP, (pointer) pmap))
+    if (!AddResource(mid, RT_COLORMAP, (void *) pmap))
         return BadAlloc;
 
     /*  
@@ -397,7 +397,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
  * \param value  must conform to DeleteType
  */
 int
-FreeColormap(pointer value, XID mid)
+FreeColormap(void *value, XID mid)
 {
     int i;
     EntryPtr pent;
@@ -405,7 +405,7 @@ FreeColormap(pointer value, XID mid)
 
     if (CLIENT_ID(mid) != SERVER_ID) {
         (*pmap->pScreen->UninstallColormap) (pmap);
-        WalkTree(pmap->pScreen, (VisitWindowProcPtr) TellNoMap, (pointer) &mid);
+        WalkTree(pmap->pScreen, (VisitWindowProcPtr) TellNoMap, (void *) &mid);
     }
 
     /* This is the device's chance to undo anything it needs to, especially
@@ -450,15 +450,15 @@ FreeColormap(pointer value, XID mid)
 static int
 TellNoMap(WindowPtr pwin, Colormap * pmid)
 {
-    xEvent xE;
-
     if (wColormap(pwin) == *pmid) {
         /* This should be call to DeliverEvent */
+        xEvent xE = {
+            .u.colormap.window = pwin->drawable.id,
+            .u.colormap.colormap = None,
+            .u.colormap.new = TRUE,
+            .u.colormap.state = ColormapUninstalled
+        };
         xE.u.u.type = ColormapNotify;
-        xE.u.colormap.window = pwin->drawable.id;
-        xE.u.colormap.colormap = None;
-        xE.u.colormap.new = TRUE;
-        xE.u.colormap.state = ColormapUninstalled;
 #ifdef PANORAMIX
         if (noPanoramiXExtension || !pwin->drawable.pScreen->myNum)
 #endif
@@ -474,10 +474,9 @@ TellNoMap(WindowPtr pwin, Colormap * pmid)
 
 /* Tell window that pmid got uninstalled */
 int
-TellLostMap(WindowPtr pwin, pointer value)
+TellLostMap(WindowPtr pwin, void *value)
 {
     Colormap *pmid = (Colormap *) value;
-    xEvent xE;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension && pwin->drawable.pScreen->myNum)
@@ -485,11 +484,13 @@ TellLostMap(WindowPtr pwin, pointer value)
 #endif
     if (wColormap(pwin) == *pmid) {
         /* This should be call to DeliverEvent */
+        xEvent xE = {
+            .u.colormap.window = pwin->drawable.id,
+            .u.colormap.colormap = *pmid,
+            .u.colormap.new = FALSE,
+            .u.colormap.state = ColormapUninstalled
+        };
         xE.u.u.type = ColormapNotify;
-        xE.u.colormap.window = pwin->drawable.id;
-        xE.u.colormap.colormap = *pmid;
-        xE.u.colormap.new = FALSE;
-        xE.u.colormap.state = ColormapUninstalled;
         DeliverEvents(pwin, &xE, 1, (WindowPtr) NULL);
     }
 
@@ -498,10 +499,9 @@ TellLostMap(WindowPtr pwin, pointer value)
 
 /* Tell window that pmid got installed */
 int
-TellGainedMap(WindowPtr pwin, pointer value)
+TellGainedMap(WindowPtr pwin, void *value)
 {
     Colormap *pmid = (Colormap *) value;
-    xEvent xE;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension && pwin->drawable.pScreen->myNum)
@@ -509,11 +509,13 @@ TellGainedMap(WindowPtr pwin, pointer value)
 #endif
     if (wColormap(pwin) == *pmid) {
         /* This should be call to DeliverEvent */
+        xEvent xE = {
+            .u.colormap.window = pwin->drawable.id,
+            .u.colormap.colormap = *pmid,
+            .u.colormap.new = FALSE,
+            .u.colormap.state = ColormapInstalled
+        };
         xE.u.u.type = ColormapNotify;
-        xE.u.colormap.window = pwin->drawable.id;
-        xE.u.colormap.colormap = *pmid;
-        xE.u.colormap.new = FALSE;
-        xE.u.colormap.state = ColormapInstalled;
         DeliverEvents(pwin, &xE, 1, (WindowPtr) NULL);
     }
 
@@ -576,7 +578,7 @@ CopyFree(int channel, int client, ColormapPtr pmapSrc, ColormapPtr pmapDst)
     int nalloc;
 
     switch (channel) {
-    default:                   /* so compiler can see that everything gets initialized */
+    default:         /* so compiler can see that everything gets initialized */
     case REDMAP:
         ppix = (pmapSrc->clientPixelsRed)[client];
         npix = (pmapSrc->numPixelsRed)[client];
@@ -653,18 +655,18 @@ FreeCell(ColormapPtr pmap, Pixel i, int channel)
     int *pCount;
 
     switch (channel) {
-    default:                   /* so compiler can see that everything gets initialized */
+    default:         /* so compiler can see that everything gets initialized */
     case PSEUDOMAP:
     case REDMAP:
-        pent = (EntryPtr) & pmap->red[i];
+        pent = (EntryPtr) &pmap->red[i];
         pCount = &pmap->freeRed;
         break;
     case GREENMAP:
-        pent = (EntryPtr) & pmap->green[i];
+        pent = (EntryPtr) &pmap->green[i];
         pCount = &pmap->freeGreen;
         break;
     case BLUEMAP:
-        pent = (EntryPtr) & pmap->blue[i];
+        pent = (EntryPtr) &pmap->blue[i];
         pCount = &pmap->freeBlue;
         break;
     }
@@ -843,7 +845,7 @@ AllocColor(ColormapPtr pmap,
             pmap->pVisual->vid == pmap->pScreen->rootVisual) {
             ColormapPtr prootmap;
 
-            dixLookupResourceByType((pointer *) &prootmap,
+            dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
                                     clients[client], DixReadAccess);
 
@@ -861,7 +863,7 @@ AllocColor(ColormapPtr pmap,
             pmap->pVisual->vid == pmap->pScreen->rootVisual) {
             ColormapPtr prootmap;
 
-            dixLookupResourceByType((pointer *) &prootmap,
+            dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
                                     clients[client], DixReadAccess);
 
@@ -915,7 +917,7 @@ AllocColor(ColormapPtr pmap,
         }
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (pointer) pcr))
+        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
             return BadAlloc;
     }
     return Success;
@@ -1398,7 +1400,7 @@ QueryColors(ColormapPtr pmap, int count, Pixel * ppixIn, xrgb * prgbList,
                 errVal = BadValue;
             }
             else {
-                pent = (EntryPtr) & pmap->red[pixel];
+                pent = (EntryPtr) &pmap->red[pixel];
                 if (pent->fShared) {
                     prgb->red = pent->co.shco.red->color;
                     prgb->green = pent->co.shco.green->color;
@@ -1461,9 +1463,9 @@ FreePixels(ColormapPtr pmap, int client)
  *  \unused fakeid
  */
 int
-FreeClientPixels(pointer value, XID fakeid)
+FreeClientPixels(void *value, XID fakeid)
 {
-    pointer pmap;
+    void *pmap;
     colorResource *pcr = value;
     int rc;
 
@@ -1530,7 +1532,7 @@ AllocColorCells(int client, ColormapPtr pmap, int colors, int planes,
     if ((ok == Success) && pcr) {
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (pointer) pcr))
+        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
             ok = BadAlloc;
     }
     else
@@ -1612,7 +1614,7 @@ AllocColorPlanes(int client, ColormapPtr pmap, int colors,
     if ((ok == Success) && pcr) {
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (pointer) pcr))
+        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
             ok = BadAlloc;
     }
     else
@@ -2146,7 +2148,7 @@ FreeCo(ColormapPtr pmap, int client, int color, int npixIn, Pixel * ppixIn,
         ppixClient = pmap->clientPixelsBlue[client];
         npixClient = pmap->numPixelsBlue[client];
         break;
-    default:                   /* so compiler can see that everything gets initialized */
+    default:        /* so compiler can see that everything gets initialized */
     case PSEUDOMAP:
         cmask = ~((Pixel) 0);
         rgbbad = 0;
@@ -2490,7 +2492,7 @@ struct colormap_lookup_data {
 };
 
 static void
-_colormap_find_resource(pointer value, XID id, pointer cdata)
+_colormap_find_resource(void *value, XID id, void *cdata)
 {
     struct colormap_lookup_data *cmap_data = cdata;
     VisualPtr visuals = cmap_data->visuals;

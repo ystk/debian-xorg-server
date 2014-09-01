@@ -129,11 +129,13 @@ void
 xf86SetModeDefaultName(DisplayModePtr mode)
 {
     Bool interlaced = ! !(mode->Flags & V_INTERLACE);
+    char *tmp;
 
-    free(mode->name);
+    free((void *) mode->name);
 
-    XNFasprintf(&mode->name, "%dx%d%s", mode->HDisplay, mode->VDisplay,
+    XNFasprintf(&tmp, "%dx%d%s", mode->HDisplay, mode->VDisplay,
                 interlaced ? "i" : "");
+    mode->name = tmp;
 }
 
 /*
@@ -188,6 +190,21 @@ xf86SetModeCrtc(DisplayModePtr p, int adjustFlags)
 
     p->CrtcHAdjusted = FALSE;
     p->CrtcVAdjusted = FALSE;
+}
+
+/**
+ * Fills in a copy of mode, removing all stale pointer references.
+ * xf86ModesEqual will return true when comparing with original mode.
+ */
+void
+xf86SaveModeContents(DisplayModePtr intern, const DisplayModeRec *mode)
+{
+    *intern = *mode;
+    intern->prev = intern->next = NULL;
+    intern->name = NULL;
+    intern->PrivSize = 0;
+    intern->PrivFlags = 0;
+    intern->Private = NULL;
 }
 
 /**

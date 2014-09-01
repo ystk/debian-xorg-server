@@ -109,7 +109,7 @@ typedef void (*xf86XvMCDestroySubpictureProcPtr) (ScrnInfoPtr pScrn,
                                                   XvMCSubpicturePtr subpicture);
 
 typedef struct {
-    char *name;
+    const char *name;
     int num_surfaces;
     XF86MCSurfaceInfoPtr *surfaces;
     int num_subpictures;
@@ -137,8 +137,5 @@ extern _X_EXPORT Bool xf86XvMCScreenInit(ScreenPtr pScreen,
 
 extern _X_EXPORT XF86MCAdaptorPtr xf86XvMCCreateAdaptorRec(void);
 extern _X_EXPORT void xf86XvMCDestroyAdaptorRec(XF86MCAdaptorPtr adaptor);
-
-typedef int (*XvMCScreenInitProcPtr) (ScreenPtr, int, XvMCAdaptorPtr);
-extern _X_EXPORT XvMCScreenInitProcPtr XvMCScreenInitProc;
 
 #endif                          /* _XF86XVMC_H */

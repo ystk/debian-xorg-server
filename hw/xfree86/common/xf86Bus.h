@@ -42,6 +42,7 @@
 #if defined(__sparc__) || defined(__sparc)
 #include "xf86sbusBus.h"
 #endif
+#include "xf86platformBus.h"
 
 typedef struct {
     DriverPtr driver;
@@ -50,7 +51,7 @@ typedef struct {
     EntityProc entityInit;
     EntityProc entityEnter;
     EntityProc entityLeave;
-    pointer private;
+    void *private;
     Bool active;
     Bool inUse;
     BusRec bus;

@@ -406,7 +406,7 @@ _dix_test_xi_convert(DeviceEvent *ev, int expected_rc, int expected_count)
         assert(kbp->same_screen == FALSE);
 
         while (--count > 0) {
-            deviceValuator *v = (deviceValuator *) & xi[count];
+            deviceValuator *v = (deviceValuator *) &xi[count];
 
             assert(v->type == DeviceValuator);
             assert(v->num_valuators <= 6);
@@ -965,6 +965,19 @@ test_pad_to_int32(int i)
 }
 
 static void
+test_padding_for_int32(int i)
+{
+    static const int padlength[4] = { 0, 3, 2, 1 };
+    int expected_bytes = (((i + 3) / 4) * 4) - i;
+
+    assert(padding_for_int32(i) >= 0);
+    assert(padding_for_int32(i) <= 3);
+    assert(padding_for_int32(i) == expected_bytes);
+    assert(padding_for_int32(i) == padlength[i & 3]);
+    assert((padding_for_int32(i) + i) == pad_to_int32(i));
+}
+
+static void
 include_byte_padding_macros(void)
 {
     printf("Testing bits_to_bytes()\n");
@@ -996,12 +1009,12 @@ include_byte_padding_macros(void)
     test_bytes_to_int32(INT_MAX - 4);
     test_bytes_to_int32(INT_MAX - 3);
 
-    printf("Testing pad_to_int32\n");
+    printf("Testing pad_to_int32()\n");
 
-    test_pad_to_int32(0);
     test_pad_to_int32(0);
     test_pad_to_int32(1);
     test_pad_to_int32(2);
+    test_pad_to_int32(3);
     test_pad_to_int32(7);
     test_pad_to_int32(8);
     test_pad_to_int32(0xFF);
@@ -1012,6 +1025,23 @@ include_byte_padding_macros(void)
     test_pad_to_int32(0x1000000);
     test_pad_to_int32(INT_MAX - 4);
     test_pad_to_int32(INT_MAX - 3);
+
+    printf("Testing padding_for_int32()\n");
+
+    test_padding_for_int32(0);
+    test_padding_for_int32(1);
+    test_padding_for_int32(2);
+    test_padding_for_int32(3);
+    test_padding_for_int32(7);
+    test_padding_for_int32(8);
+    test_padding_for_int32(0xFF);
+    test_padding_for_int32(0x100);
+    test_padding_for_int32(0xFFFF);
+    test_padding_for_int32(0x10000);
+    test_padding_for_int32(0xFFFFFF);
+    test_padding_for_int32(0x1000000);
+    test_padding_for_int32(INT_MAX - 4);
+    test_padding_for_int32(INT_MAX - 3);
 }
 
 static void
@@ -1150,50 +1180,54 @@ cmp_attr_fields(InputAttributes * attr1, InputAttributes * attr2)
 static void
 dix_input_attributes(void)
 {
-    InputAttributes orig = { 0 };
+    InputAttributes *orig;
     InputAttributes *new;
-    char *tags[4] = { "tag1", "tag2", "tag2", NULL };
 
     new = DuplicateInputAttributes(NULL);
     assert(!new);
 
-    new = DuplicateInputAttributes(&orig);
-    assert(memcmp(&orig, new, sizeof(InputAttributes)) == 0);
+    orig = calloc(1, sizeof(InputAttributes));
+    assert(orig);
 
-    orig.product = "product name";
-    new = DuplicateInputAttributes(&orig);
-    cmp_attr_fields(&orig, new);
+    new = DuplicateInputAttributes(orig);
+    assert(memcmp(orig, new, sizeof(InputAttributes)) == 0);
+
+    orig->product = xnfstrdup("product name");
+    new = DuplicateInputAttributes(orig);
+    cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig.vendor = "vendor name";
-    new = DuplicateInputAttributes(&orig);
-    cmp_attr_fields(&orig, new);
+    orig->vendor = xnfstrdup("vendor name");
+    new = DuplicateInputAttributes(orig);
+    cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig.device = "device path";
-    new = DuplicateInputAttributes(&orig);
-    cmp_attr_fields(&orig, new);
+    orig->device = xnfstrdup("device path");
+    new = DuplicateInputAttributes(orig);
+    cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig.pnp_id = "PnPID";
-    new = DuplicateInputAttributes(&orig);
-    cmp_attr_fields(&orig, new);
+    orig->pnp_id = xnfstrdup("PnPID");
+    new = DuplicateInputAttributes(orig);
+    cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig.usb_id = "USBID";
-    new = DuplicateInputAttributes(&orig);
-    cmp_attr_fields(&orig, new);
+    orig->usb_id = xnfstrdup("USBID");
+    new = DuplicateInputAttributes(orig);
+    cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig.flags = 0xF0;
-    new = DuplicateInputAttributes(&orig);
-    cmp_attr_fields(&orig, new);
+    orig->flags = 0xF0;
+    new = DuplicateInputAttributes(orig);
+    cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
 
-    orig.tags = tags;
-    new = DuplicateInputAttributes(&orig);
-    cmp_attr_fields(&orig, new);
+    orig->tags = xstrtokenize("tag1 tag2 tag3", " ");
+    new = DuplicateInputAttributes(orig);
+    cmp_attr_fields(orig, new);
     FreeInputAttributes(new);
+
+    FreeInputAttributes(orig);
 }
 
 static void
@@ -1354,10 +1388,10 @@ dix_valuator_alloc(void)
 
         assert(v);
         assert(v->numAxes == num_axes);
-#if !defined(__i386__) && !defined(__sh__)
+#if !defined(__i386__) && !defined(__m68k__) && !defined(__sh__)
         /* must be double-aligned on 64 bit */
-        assert(((void *) v->axisVal - (void *) v) % sizeof(double) == 0);
-        assert(((void *) v->axes - (void *) v) % sizeof(double) == 0);
+        assert(offsetof(struct _ValuatorClassRec, axisVal) % sizeof(double) == 0);
+        assert(offsetof(struct _ValuatorClassRec, axes) % sizeof(double) == 0);
 #endif
         num_axes++;
     }
@@ -1678,6 +1712,18 @@ mieq_test_event_handler(int screenNum, InternalEvent *ie, DeviceIntPtr dev)
 static void
 _mieq_test_generate_events(uint32_t start, uint32_t count)
 {
+    static DeviceIntRec dev;
+    static SpriteInfoRec spriteInfo;
+    static SpriteRec sprite;
+
+    memset(&dev, 0, sizeof(dev));
+    memset(&spriteInfo, 0, sizeof(spriteInfo));
+    memset(&sprite, 0, sizeof(sprite));
+    dev.spriteInfo = &spriteInfo;
+    spriteInfo.sprite = &sprite;
+
+    dev.enabled = 1;
+
     count += start;
     while (start < count) {
         RawDeviceEvent e = { 0 };
@@ -1687,7 +1733,7 @@ _mieq_test_generate_events(uint32_t start, uint32_t count)
         e.time = GetTimeInMillis();
         e.flags = start;
 
-        mieqEnqueue(NULL, (InternalEvent *) &e);
+        mieqEnqueue(&dev, (InternalEvent *) &e);
 
         start++;
     }

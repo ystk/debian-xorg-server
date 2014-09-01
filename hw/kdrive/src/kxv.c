@@ -58,7 +58,7 @@ of the copyright holder.
 
 /* XvScreenRec fields */
 
-static Bool KdXVCloseScreen(int, ScreenPtr);
+static Bool KdXVCloseScreen(ScreenPtr);
 static int KdXVQueryAdaptors(ScreenPtr, XvAdaptorPtr *, int *);
 
 /* XvAdaptorRec fields */
@@ -106,10 +106,6 @@ static DevPrivateKeyRec KdXVWindowKeyRec;
 static DevPrivateKey KdXvScreenKey;
 static unsigned long KdXVGeneration = 0;
 static unsigned long PortResource = 0;
-
-DevPrivateKey (*XvGetScreenKeyProc) (void) = XvGetScreenKey;
-unsigned long (*XvGetRTPortProc) (void) = XvGetRTPort;
-int (*XvScreenInitProc) (ScreenPtr) = XvScreenInit;
 
 #define GET_XV_SCREEN(pScreen) ((XvScreenPtr) \
     dixLookupPrivate(&(pScreen)->devPrivates, KdXvScreenKey))
@@ -186,17 +182,17 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr * adaptors, int num)
     if (KdXVGeneration != serverGeneration)
         KdXVGeneration = serverGeneration;
 
-    if (!XvGetScreenKeyProc || !XvGetRTPortProc || !XvScreenInitProc)
+    if (noXvExtension)
         return FALSE;
 
     if (!dixRegisterPrivateKey(&KdXVWindowKeyRec, PRIVATE_WINDOW, 0))
         return FALSE;
 
-    if (Success != (*XvScreenInitProc) (pScreen))
+    if (Success != XvScreenInit(pScreen))
         return FALSE;
 
-    KdXvScreenKey = (*XvGetScreenKeyProc) ();
-    PortResource = (*XvGetRTPortProc) ();
+    KdXvScreenKey = XvGetScreenKey();
+    PortResource = XvGetRTPort();
 
     pxvs = GET_XV_SCREEN(pScreen);
 
@@ -212,7 +208,7 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr * adaptors, int num)
        sure that I appreciate that.  */
 
     ScreenPriv = malloc(sizeof(KdXVScreenRec));
-    pxvs->devPriv.ptr = (pointer) ScreenPriv;
+    pxvs->devPriv.ptr = (void *) ScreenPriv;
 
     if (!ScreenPriv)
         return FALSE;
@@ -389,28 +385,7 @@ KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr * infoPtr, int number)
 
             for (i = 0, pi = pImage, imagePtr = adaptorPtr->pImages;
                  i < adaptorPtr->nImages; i++, pi++, imagePtr++) {
-                pi->id = imagePtr->id;
-                pi->type = imagePtr->type;
-                pi->byte_order = imagePtr->byte_order;
-                memcpy(pi->guid, imagePtr->guid, 16);
-                pi->bits_per_pixel = imagePtr->bits_per_pixel;
-                pi->format = imagePtr->format;
-                pi->num_planes = imagePtr->num_planes;
-                pi->depth = imagePtr->depth;
-                pi->red_mask = imagePtr->red_mask;
-                pi->green_mask = imagePtr->green_mask;
-                pi->blue_mask = imagePtr->blue_mask;
-                pi->y_sample_bits = imagePtr->y_sample_bits;
-                pi->u_sample_bits = imagePtr->u_sample_bits;
-                pi->v_sample_bits = imagePtr->v_sample_bits;
-                pi->horz_y_period = imagePtr->horz_y_period;
-                pi->horz_u_period = imagePtr->horz_u_period;
-                pi->horz_v_period = imagePtr->horz_v_period;
-                pi->vert_y_period = imagePtr->vert_y_period;
-                pi->vert_u_period = imagePtr->vert_u_period;
-                pi->vert_v_period = imagePtr->vert_v_period;
-                memcpy(pi->component_order, imagePtr->component_order, 32);
-                pi->scanline_order = imagePtr->scanline_order;
+                memcpy(pi, imagePtr, sizeof(*pi));
             }
             pa->nImages = adaptorPtr->nImages;
             pa->pImages = pImage;
@@ -421,9 +396,7 @@ KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr * infoPtr, int number)
              calloc(adaptorPtr->nAttributes, sizeof(XvAttributeRec)))) {
             for (pat = pAttribute, attributePtr = adaptorPtr->pAttributes, i =
                  0; i < adaptorPtr->nAttributes; pat++, i++, attributePtr++) {
-                pat->flags = attributePtr->flags;
-                pat->min_value = attributePtr->min_value;
-                pat->max_value = attributePtr->max_value;
+                memcpy(pat, attributePtr, sizeof(*pat));
                 pat->name = strdup(attributePtr->name);
             }
             pa->nAttributes = adaptorPtr->nAttributes;
@@ -491,7 +464,7 @@ KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr * infoPtr, int number)
         adaptorPriv->PutImage = adaptorPtr->PutImage;
         adaptorPriv->ReputImage = adaptorPtr->ReputImage;
 
-        pa->devPriv.ptr = (pointer) adaptorPriv;
+        pa->devPriv.ptr = (void *) adaptorPriv;
 
         if (!(pPort = calloc(adaptorPtr->nPorts, sizeof(XvPortRec)))) {
             KdXVFreeAdaptor(pa);
@@ -878,7 +851,7 @@ KdXVReputImage(XvPortRecPrivatePtr portPriv)
 }
 
 static int
-KdXVReputAllVideo(WindowPtr pWin, pointer data)
+KdXVReputAllVideo(WindowPtr pWin, void *data)
 {
     KdXVWindowPtr WinPriv;
 
@@ -1118,7 +1091,7 @@ KdXVClipNotify(WindowPtr pWin, int dx, int dy)
 /**** Required XvScreenRec fields ****/
 
 static Bool
-KdXVCloseScreen(int i, ScreenPtr pScreen)
+KdXVCloseScreen(ScreenPtr pScreen)
 {
     XvScreenPtr pxvs = GET_XV_SCREEN(pScreen);
     KdXVScreenPtr ScreenPriv = GET_KDXV_SCREEN(pScreen);
@@ -1178,7 +1151,6 @@ void
 KdXVDisable(ScreenPtr pScreen)
 {
     XvScreenPtr pxvs;
-    KdXVScreenPtr ScreenPriv;
     XvAdaptorPtr pAdaptor;
     XvPortPtr pPort;
     XvPortRecPrivatePtr pPriv;
@@ -1188,7 +1160,6 @@ KdXVDisable(ScreenPtr pScreen)
         return;
 
     pxvs = GET_XV_SCREEN(pScreen);
-    ScreenPriv = GET_KDXV_SCREEN(pScreen);
 
     for (i = 0; i < pxvs->nAdaptors; i++) {
         pAdaptor = &pxvs->pAdaptors[i];
@@ -1827,14 +1798,14 @@ KdXVCopyPlanarData(KdScreenInfo * screen, CARD8 *src, CARD8 *dst, int randr,
 
     w >>= 1;
     for (j = 0; j < h; j++) {
-        CARD32 *dst = (CARD32 *) dst1;
+        CARD32 *dst32 = (CARD32 *) dst1;
         CARD8 *s1l = src1;
         CARD8 *s1r = src1 + srcNext;
         CARD8 *s2 = src2;
         CARD8 *s3 = src3;
 
         for (i = 0; i < w; i++) {
-            *dst++ = *s1l | (*s1r << 16) | (*s3 << 8) | (*s2 << 24);
+            *dst32++ = *s1l | (*s1r << 16) | (*s3 << 8) | (*s2 << 24);
             s1l += srcRight;
             s1r += srcRight;
             s2 += srcRight2;

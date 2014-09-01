@@ -39,10 +39,6 @@
 #include "glxserver.h"
 #include "glxbyteorder.h"
 #include "singlesize.h"
-#include "glapitable.h"
-#include "glapi.h"
-#include "glthread.h"
-#include "dispatch.h"
 #include "glxext.h"
 #include "indirect_table.h"
 #include "indirect_util.h"
@@ -57,8 +53,7 @@ __glGetBooleanv_variable_size(GLenum e)
     if (e == GL_COMPRESSED_TEXTURE_FORMATS) {
         GLint temp;
 
-        CALL_GetIntegerv(GET_DISPATCH(),
-                         (GL_NUM_COMPRESSED_TEXTURE_FORMATS, &temp));
+        glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &temp);
         return temp;
     }
     else {
@@ -138,10 +133,10 @@ __glXSendReply(ClientPtr client, const void *data, size_t elements,
      */
 
     (void) memcpy(&__glXReply.pad3, data, 8);
-    WriteToClient(client, sz_xGLXSingleReply, (char *) &__glXReply);
+    WriteToClient(client, sz_xGLXSingleReply, &__glXReply);
 
     if (reply_ints != 0) {
-        WriteToClient(client, reply_ints * 4, (char *) data);
+        WriteToClient(client, reply_ints * 4, data);
     }
 }
 
@@ -184,10 +179,10 @@ __glXSendReplySwap(ClientPtr client, const void *data, size_t elements,
      */
 
     (void) memcpy(&__glXReply.pad3, data, 8);
-    WriteToClient(client, sz_xGLXSingleReply, (char *) &__glXReply);
+    WriteToClient(client, sz_xGLXSingleReply, &__glXReply);
 
     if (reply_ints != 0) {
-        WriteToClient(client, reply_ints * 4, (char *) data);
+        WriteToClient(client, reply_ints * 4, data);
     }
 }
 

@@ -138,9 +138,9 @@ SendSwappedReply(ClientPtr client,
 
     }
 
-    WriteToClient(client, sizeof(xGLXVendorPrivReply), (char *) reply);
+    WriteToClient(client, sizeof(xGLXVendorPrivReply), reply);
     if (buf_size > 0)
-        WriteToClient(client, buf_size, (char *) buf);
+        WriteToClient(client, buf_size, buf);
 
 }
 
@@ -237,7 +237,7 @@ __glXVForwardPipe0WithReply(__GLXclientState * cl, GLbyte * pc)
     /*
      * get the reply from the back-end server
      */
-    _XReply(dpy, (xReply *) & be_reply, 0, False);
+    _XReply(dpy, (xReply *) &be_reply, 0, False);
     be_buf_size = be_reply.length << 2;
     if (be_buf_size > 0) {
         be_buf = (char *) malloc(be_buf_size);
@@ -246,7 +246,7 @@ __glXVForwardPipe0WithReply(__GLXclientState * cl, GLbyte * pc)
         }
         else {
             /* Throw data on the floor */
-            _XEatData(dpy, be_buf_size);
+            _XEatDataWords(dpy, be_reply.length);
             return BadAlloc;
         }
     }
@@ -265,9 +265,9 @@ __glXVForwardPipe0WithReply(__GLXclientState * cl, GLbyte * pc)
         SendSwappedReply(client, &reply, be_buf, be_buf_size);
     }
     else {
-        WriteToClient(client, sizeof(xGLXVendorPrivReply), (char *) &reply);
+        WriteToClient(client, sizeof(xGLXVendorPrivReply), &reply);
         if (be_buf_size > 0)
-            WriteToClient(client, be_buf_size, (char *) be_buf);
+            WriteToClient(client, be_buf_size, be_buf);
     }
 
     if (be_buf_size > 0)
@@ -331,26 +331,30 @@ __glXVForwardAllWithReply(__GLXclientState * cl, GLbyte * pc)
         /*
          * get the reply from the back-end server
          */
-        _XReply(dpy, (xReply *) & be_reply, 0, False);
-        be_buf_size = be_reply.length << 2;
-        if (be_buf_size > 0) {
-            be_buf = (char *) malloc(be_buf_size);
-            if (be_buf) {
-                _XRead(dpy, be_buf, be_buf_size);
+        _XReply(dpy, (xReply *) &be_reply, 0, False);
+        if (s == from_screen) {
+            /* Save data from last reply to send on to client */
+            be_buf_size = be_reply.length << 2;
+            if (be_buf_size > 0) {
+                be_buf = malloc(be_buf_size);
+                if (be_buf) {
+                    _XRead(dpy, be_buf, be_buf_size);
+                }
+                else {
+                    /* Throw data on the floor */
+                    _XEatDataWords(dpy, be_reply.length);
+                    return BadAlloc;
+                }
             }
-            else {
-                /* Throw data on the floor */
-                _XEatData(dpy, be_buf_size);
-                return BadAlloc;
-            }
+        }
+        else {
+            /* Just discard data from all replies before the last one */
+            if (be_reply.length > 0)
+                _XEatDataWords(dpy, be_reply.length);
         }
 
         UnlockDisplay(dpy);
         SyncHandle();
-
-        if (s > from_screen && be_buf_size > 0) {
-            free(be_buf);
-        }
     }
 
     /*
@@ -364,9 +368,9 @@ __glXVForwardAllWithReply(__GLXclientState * cl, GLbyte * pc)
         SendSwappedReply(client, &reply, be_buf, be_buf_size);
     }
     else {
-        WriteToClient(client, sizeof(xGLXVendorPrivReply), (char *) &reply);
+        WriteToClient(client, sizeof(xGLXVendorPrivReply), &reply);
         if (be_buf_size > 0)
-            WriteToClient(client, be_buf_size, (char *) be_buf);
+            WriteToClient(client, be_buf_size, be_buf);
     }
 
     if (be_buf_size > 0)

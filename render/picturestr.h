@@ -145,7 +145,7 @@ typedef struct _Picture {
     DDXPointRec alphaOrigin;
 
     DDXPointRec clipOrigin;
-    pointer clientClip;
+    void *clientClip;
 
     unsigned long serialNumber;
 
@@ -189,7 +189,7 @@ typedef struct {
 typedef int (*CreatePictureProcPtr) (PicturePtr pPicture);
 typedef void (*DestroyPictureProcPtr) (PicturePtr pPicture);
 typedef int (*ChangePictureClipProcPtr) (PicturePtr pPicture,
-                                         int clipType, pointer value, int n);
+                                         int clipType, void *value, int n);
 typedef void (*DestroyPictureClipProcPtr) (PicturePtr pPicture);
 
 typedef int (*ChangePictureTransformProcPtr) (PicturePtr pPicture,
@@ -363,10 +363,10 @@ extern _X_EXPORT RESTYPE GlyphSetType;
 #define SetPictureWindow(w,p) dixSetPrivate(&(w)->devPrivates, PictureWindowPrivateKey, p)
 
 #define VERIFY_PICTURE(pPicture, pid, client, mode) {\
-    int rc = dixLookupResourceByType((pointer)&(pPicture), pid,\
-	                             PictureType, client, mode);\
-    if (rc != Success)\
-	return rc;\
+    int tmprc = dixLookupResourceByType((void *)&(pPicture), pid,\
+	                                PictureType, client, mode);\
+    if (tmprc != Success)\
+	return tmprc;\
 }
 
 #define VERIFY_ALPHA(pPicture, pid, client, mode) {\
@@ -377,11 +377,14 @@ extern _X_EXPORT RESTYPE GlyphSetType;
     } \
 } \
 
+extern _X_EXPORT PictFormatPtr
+ PictureWindowFormat(WindowPtr pWindow);
+
 extern _X_EXPORT Bool
  PictureDestroyWindow(WindowPtr pWindow);
 
 extern _X_EXPORT Bool
- PictureCloseScreen(int Index, ScreenPtr pScreen);
+ PictureCloseScreen(ScreenPtr pScreen);
 
 extern _X_EXPORT void
  PictureStoreColors(ColormapPtr pColormap, int ndef, xColorItem * pdef);
@@ -479,10 +482,10 @@ extern _X_EXPORT void
  ValidatePicture(PicturePtr pPicture);
 
 extern _X_EXPORT int
- FreePicture(pointer pPicture, XID pid);
+ FreePicture(void *pPicture, XID pid);
 
 extern _X_EXPORT int
- FreePictFormat(pointer pPictFormat, XID pid);
+ FreePictFormat(void *pPictFormat, XID pid);
 
 extern _X_EXPORT void
 
@@ -543,8 +546,6 @@ CompositeTriFan(CARD8 op,
                 PicturePtr pDst,
                 PictFormatPtr maskFormat,
                 INT16 xSrc, INT16 ySrc, int npoints, xPointFixed * points);
-
-extern _X_EXPORT void RenderExtensionInit(void);
 
 Bool
  AnimCurInit(ScreenPtr pScreen);

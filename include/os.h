@@ -49,6 +49,7 @@ SOFTWARE.
 
 #include "misc.h"
 #include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 
 #define SCREEN_SAVER_ON   0
@@ -69,12 +70,12 @@ typedef struct _NewClientRec *NewClientPtr;
 #ifndef xalloc
 #define xnfalloc(size) XNFalloc((unsigned long)(size))
 #define xnfcalloc(_num, _size) XNFcalloc((unsigned long)(_num)*(unsigned long)(_size))
-#define xnfrealloc(ptr, size) XNFrealloc((pointer)(ptr), (unsigned long)(size))
+#define xnfrealloc(ptr, size) XNFrealloc((void *)(ptr), (unsigned long)(size))
 
 #define xalloc(size) Xalloc((unsigned long)(size))
 #define xcalloc(_num, _size) Xcalloc((unsigned long)(_num)*(unsigned long)(_size))
-#define xrealloc(ptr, size) Xrealloc((pointer)(ptr), (unsigned long)(size))
-#define xfree(ptr) Xfree((pointer)(ptr))
+#define xrealloc(ptr, size) Xrealloc((void *)(ptr), (unsigned long)(size))
+#define xfree(ptr) Xfree((void *)(ptr))
 #define xstrdup(s) Xstrdup(s)
 #define xnfstrdup(s) XNFstrdup(s)
 #endif
@@ -87,13 +88,21 @@ extern void ddxBeforeReset(void);
 #endif
 
 #ifdef DDXOSVERRORF
-extern _X_EXPORT void (*OsVendorVErrorFProc) (const char *, va_list args);
+extern _X_EXPORT void (*OsVendorVErrorFProc) (const char *,
+                                              va_list args)
+_X_ATTRIBUTE_PRINTF(1, 0);
 #endif
 
 extern _X_EXPORT int WaitForSomething(int *     /*pClientsReady */
     );
 
 extern _X_EXPORT int ReadRequestFromClient(ClientPtr /*client */ );
+
+#if XTRANS_SEND_FDS
+extern _X_EXPORT int ReadFdFromClient(ClientPtr client);
+
+extern _X_EXPORT int WriteFdToClient(ClientPtr client, int fd, Bool do_close);
+#endif
 
 extern _X_EXPORT Bool InsertFakeRequest(ClientPtr /*client */ ,
                                         char * /*data */ ,
@@ -131,7 +140,7 @@ extern _X_EXPORT const char *ClientAuthorized(ClientPtr /*client */ ,
                                               char * /*auth_string */ );
 
 extern _X_EXPORT Bool EstablishNewConnections(ClientPtr /*clientUnused */ ,
-                                              pointer /*closure */ );
+                                              void */*closure */ );
 
 extern _X_EXPORT void CheckConnections(void);
 
@@ -157,20 +166,21 @@ extern _X_EXPORT void MakeClientGrabImpervious(ClientPtr /*client */ );
 
 extern _X_EXPORT void MakeClientGrabPervious(ClientPtr /*client */ );
 
-#ifdef XQUARTZ
-extern void ListenOnOpenFD(int /* fd */ , int /* noxauth */ );
-#endif
+extern _X_EXPORT void ListenOnOpenFD(int /* fd */ , int /* noxauth */ );
+
+extern _X_EXPORT Bool AddClientOnOpenFD(int /* fd */ );
 
 extern _X_EXPORT CARD32 GetTimeInMillis(void);
+extern _X_EXPORT CARD64 GetTimeInMicros(void);
 
-extern _X_EXPORT void AdjustWaitForDelay(pointer /*waitTime */ ,
+extern _X_EXPORT void AdjustWaitForDelay(void */*waitTime */ ,
                                          unsigned long /*newdelay */ );
 
 typedef struct _OsTimerRec *OsTimerPtr;
 
 typedef CARD32 (*OsTimerCallback) (OsTimerPtr /* timer */ ,
                                    CARD32 /* time */ ,
-                                   pointer /* arg */ );
+                                   void */* arg */ );
 
 extern _X_EXPORT void TimerInit(void);
 
@@ -183,7 +193,7 @@ extern _X_EXPORT OsTimerPtr TimerSet(OsTimerPtr /* timer */ ,
                                      int /* flags */ ,
                                      CARD32 /* millis */ ,
                                      OsTimerCallback /* func */ ,
-                                     pointer /* arg */ );
+                                     void */* arg */ );
 
 extern _X_EXPORT void TimerCheck(void);
 extern _X_EXPORT void TimerCancel(OsTimerPtr /* pTimer */ );
@@ -202,7 +212,7 @@ extern _X_EXPORT void ProcessCommandLine(int /*argc */ , char * /*argv */ []);
 
 extern _X_EXPORT int set_font_authorizations(char ** /* authorizations */ ,
                                              int * /*authlen */ ,
-                                             pointer /* client */ );
+                                             void */* client */ );
 
 #ifndef _HAVE_XALLOC_DECLS
 #define _HAVE_XALLOC_DECLS
@@ -321,7 +331,8 @@ extern _X_EXPORT void
 OsCleanup(Bool);
 
 extern _X_EXPORT void
-OsVendorFatalError(void);
+OsVendorFatalError(const char *f, va_list args)
+_X_ATTRIBUTE_PRINTF(1, 0);
 
 extern _X_EXPORT void
 OsVendorInit(void);
@@ -332,6 +343,15 @@ OsBlockSignals(void);
 extern _X_EXPORT void
 OsReleaseSignals(void);
 
+extern _X_EXPORT int
+OsBlockSIGIO(void);
+
+extern _X_EXPORT void
+OsReleaseSIGIO(void);
+
+extern void
+OsResetSignals(void);
+
 extern _X_EXPORT void
 OsAbort(void)
     _X_NORETURN;
@@ -339,18 +359,22 @@ OsAbort(void)
 #if !defined(WIN32)
 extern _X_EXPORT int
 System(const char *);
-extern _X_EXPORT pointer
+extern _X_EXPORT void *
 Popen(const char *, const char *);
 extern _X_EXPORT int
-Pclose(pointer);
-extern _X_EXPORT pointer
+Pclose(void *);
+extern _X_EXPORT void *
 Fopen(const char *, const char *);
 extern _X_EXPORT int
-Fclose(pointer);
+Fclose(void *);
 #else
-#define System(a) system(a)
-#define Popen(a,b) popen(a,b)
-#define Pclose(a) pclose(a)
+
+extern const char *
+Win32TempDir(void);
+
+extern int
+System(const char *cmdline);
+
 #define Fopen(a,b) fopen(a,b)
 #define Fclose(a) fclose(a)
 #endif
@@ -371,17 +395,17 @@ ForEachHostInFamily(int /*family */ ,
                     Bool (* /*func */ )(
                                            unsigned char * /* addr */ ,
                                            short /* len */ ,
-                                           pointer /* closure */ ),
-                    pointer /*closure */ );
+                                           void */* closure */ ),
+                    void */*closure */ );
 
 extern _X_EXPORT int
 RemoveHost(ClientPtr /*client */ ,
            int /*family */ ,
            unsigned /*length */ ,
-           pointer /*pAddr */ );
+           void */*pAddr */ );
 
 extern _X_EXPORT int
-GetHosts(pointer * /*data */ ,
+GetHosts(void ** /*data */ ,
          int * /*pnHosts */ ,
          int * /*pLen */ ,
          BOOL * /*pEnabled */ );
@@ -390,9 +414,6 @@ typedef struct sockaddr *sockaddrPtr;
 
 extern _X_EXPORT int
 InvalidHost(sockaddrPtr /*saddr */ , int /*len */ , ClientPtr client);
-
-extern _X_EXPORT int
-LocalClient(ClientPtr /* client */ );
 
 extern _X_EXPORT int
 LocalClientCred(ClientPtr, int *, int *);
@@ -427,7 +448,7 @@ extern _X_EXPORT void
 AddLocalHosts(void);
 
 extern _X_EXPORT void
-ResetHosts(char *display);
+ResetHosts(const char *display);
 
 extern _X_EXPORT void
 EnableLocalHost(void);
@@ -443,14 +464,14 @@ DefineSelf(int /*fd */ );
 
 #if XDMCP
 extern _X_EXPORT void
-AugmentSelf(pointer /*from */ , int /*len */ );
+AugmentSelf(void */*from */ , int /*len */ );
 
 extern _X_EXPORT void
 RegisterAuthorizations(void);
 #endif
 
 extern _X_EXPORT void
-InitAuthorization(char * /*filename */ );
+InitAuthorization(const char * /*filename */ );
 
 /* extern int LoadAuthorization(void); */
 
@@ -578,6 +599,7 @@ typedef enum {
     X_INFO,                     /* Informational message */
     X_NONE,                     /* No prefix */
     X_NOT_IMPLEMENTED,          /* Not implemented */
+    X_DEBUG,                    /* Debug message */
     X_UNKNOWN = -1              /* unknown -- this must always be last */
 } MessageType;
 
@@ -602,6 +624,12 @@ _X_ATTRIBUTE_PRINTF(3, 4);
 extern _X_EXPORT void
 LogMessage(MessageType type, const char *format, ...)
 _X_ATTRIBUTE_PRINTF(2, 3);
+extern _X_EXPORT void
+LogMessageVerbSigSafe(MessageType type, int verb, const char *format, ...)
+_X_ATTRIBUTE_PRINTF(3, 4);
+extern _X_EXPORT void
+LogVMessageVerbSigSafe(MessageType type, int verb, const char *format, va_list args)
+_X_ATTRIBUTE_PRINTF(3, 0);
 
 extern _X_EXPORT void
 LogVHdrMessageVerb(MessageType type, int verb,
@@ -647,9 +675,18 @@ extern _X_EXPORT void
 ErrorF(const char *f, ...)
 _X_ATTRIBUTE_PRINTF(1, 2);
 extern _X_EXPORT void
+VErrorFSigSafe(const char *f, va_list args)
+_X_ATTRIBUTE_PRINTF(1, 0);
+extern _X_EXPORT void
+ErrorFSigSafe(const char *f, ...)
+_X_ATTRIBUTE_PRINTF(1, 2);
+extern _X_EXPORT void
 LogPrintMarkers(void);
 
 extern _X_EXPORT void
 xorg_backtrace(void);
+
+extern _X_EXPORT int
+os_move_fd(int fd);
 
 #endif                          /* OS_H */

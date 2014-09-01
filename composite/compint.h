@@ -71,6 +71,7 @@
 #include "damageextint.h"
 #include "xfixes.h"
 #include <X11/extensions/compositeproto.h>
+#include "compositeext.h"
 #include <assert.h>
 
 /*
@@ -118,6 +119,11 @@ typedef struct _CompOverlayClientRec {
     XID resource;
 } CompOverlayClientRec;
 
+typedef struct _CompImplicitRedirectException {
+    XID parentVisual;
+    XID winVisual;
+} CompImplicitRedirectException;
+
 typedef struct _CompScreen {
     PositionWindowProcPtr PositionWindow;
     CopyWindowProcPtr CopyWindow;
@@ -154,6 +160,8 @@ typedef struct _CompScreen {
     CloseScreenProcPtr CloseScreen;
     int numAlternateVisuals;
     VisualID *alternateVisuals;
+    int numImplicitRedirectExceptions;
+    CompImplicitRedirectException *implicitRedirectExceptions;
 
     WindowPtr pOverlayWin;
     Window overlayWid;
@@ -182,7 +190,6 @@ extern DevPrivateKeyRec CompSubwindowsPrivateKeyRec;
 #define GetCompSubwindows(w) ((CompSubwindowsPtr) \
     dixLookupPrivate(&(w)->devPrivates, CompSubwindowsPrivateKey))
 
-extern RESTYPE CompositeClientWindowType;
 extern RESTYPE CompositeClientSubwindowsType;
 extern RESTYPE CompositeClientOverlayType;
 
@@ -229,13 +236,6 @@ compReallocPixmap(WindowPtr pWin, int x, int y,
                   unsigned int w, unsigned int h, int bw);
 
 /*
- * compext.c
- */
-
-void
- CompositeExtensionInit(void);
-
-/*
  * compinit.c
  */
 
@@ -271,8 +271,6 @@ void
 #else
 #define compCheckTree(s)
 #endif
-
-PictFormatPtr compWindowFormat(WindowPtr pWin);
 
 void
  compSetPixmap(WindowPtr pWin, PixmapPtr pPixmap);
@@ -328,7 +326,7 @@ WindowPtr
  CompositeRealChildHead(WindowPtr pWin);
 
 int
- DeleteWindowNoInputDevices(pointer value, XID wid);
+ DeleteWindowNoInputDevices(void *value, XID wid);
 
 int
 

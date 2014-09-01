@@ -147,39 +147,8 @@ winMWExtWMMoveResizeXWindow(WindowPtr pWin, int x, int y, int w, int h)
 }
 
 /*
- * winMWExtWMUpdateIcon
- * Change the Windows window icon
- */
 
-void
-winMWExtWMUpdateIcon(Window id)
-{
-    WindowPtr pWin;
-    HICON hIcon, hiconOld;
 
-    dixLookupResourceByType((pointer) &pWin, id, RT_WINDOW, NullClient,
-                            DixUnknownAccess);
-    hIcon = winOverrideIcon((unsigned long) pWin);
-
-    if (!hIcon)
-        hIcon = winXIconToHICON(pWin, GetSystemMetrics(SM_CXICON));
-
-    if (hIcon) {
-        win32RootlessWindowPtr pRLWinPriv
-            = (win32RootlessWindowPtr) RootlessFrameForWindow(pWin, FALSE);
-
-        if (pRLWinPriv->hWnd) {
-
-            hiconOld = (HICON) SendMessage(pRLWinPriv->hWnd,
-                                           WM_SETICON, ICON_BIG,
-                                           (LPARAM) hIcon);
-            winDestroyIcon(hiconOld);
-        }
-        hIcon = NULL;
-    }
-}
-
-/*
  * winMWExtWMDecorateWindow - Update window style. Called by EnumWindows.
  */
 
@@ -217,7 +186,6 @@ winMWExtWMUpdateWindowDecoration(win32RootlessWindowPtr pRLWinPriv,
 {
     Bool fDecorate = FALSE;
     DWORD dwExStyle = 0;
-    DWORD dwStyle = 0;
     WINDOWPLACEMENT wndPlace;
     UINT showCmd = 0;
 
@@ -245,12 +213,11 @@ winMWExtWMUpdateWindowDecoration(win32RootlessWindowPtr pRLWinPriv,
 
     showCmd |= SWP_NOMOVE | SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOZORDER;
 
-    winDebug("winMWExtWMUpdateWindowDecoration %08x %s\n",
-             (int) pRLWinPriv, fDecorate ? "Decorate" : "Bare");
+    winDebug("winMWExtWMUpdateWindowDecoration %p %s\n",
+             pRLWinPriv, fDecorate ? "Decorate" : "Bare");
 
-    /* Get the standard and extended window style information */
+    /* Get the extended window style information */
     dwExStyle = GetWindowLongPtr(pRLWinPriv->hWnd, GWL_EXSTYLE);
-    dwStyle = GetWindowLongPtr(pRLWinPriv->hWnd, GWL_STYLE);
 
     if (fDecorate) {
         RECT rcNew;

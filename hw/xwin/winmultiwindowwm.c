@@ -55,13 +55,12 @@
 #include <X11/Xwindows.h>
 
 /* Local headers */
-#include "objbase.h"
-#include "ddraw.h"
 #include "winwindow.h"
 #include "winprefs.h"
 #include "window.h"
 #include "pixmapstr.h"
 #include "windowstr.h"
+#include "winglobals.h"
 
 #ifdef XWIN_MULTIWINDOWEXTWM
 #include <X11/extensions/windowswmstr.h>
@@ -69,6 +68,10 @@
 /* We need the native HWND atom for intWM, so for consistency use the
    same name as extWM would if we were building with enabled... */
 #define WINDOWSWM_NATIVE_HWND "_WINDOWSWM_NATIVE_HWND"
+#endif
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 255
 #endif
 
 extern void winDebug(const char *format, ...);
@@ -113,6 +116,7 @@ typedef struct _WMInfo {
     WMMsgQueueRec wmMsgQueue;
     Atom atmWmProtos;
     Atom atmWmDelete;
+    Atom atmWmTakeFocus;
     Atom atmPrivMap;
     Bool fAllowOtherWM;
 } WMInfoRec, *WMInfoPtr;
@@ -132,13 +136,6 @@ typedef struct _XMsgProcArgRec {
 } XMsgProcArgRec, *XMsgProcArgPtr;
 
 /*
- * References to external symbols
- */
-
-extern char *display;
-extern void ErrorF(const char * /*f */ , ...);
-
-/*
  * Prototypes for local functions
  */
 
@@ -151,7 +148,7 @@ static Bool
  InitQueue(WMMsgQueuePtr pQueue);
 
 static void
- GetWindowName(Display * pDpy, Window iWin, wchar_t ** ppName);
+ GetWindowName(Display * pDpy, Window iWin, char **ppWindowName);
 
 static int
  SendXMessage(Display * pDisplay, Window iWin, Atom atmType, long nData);
@@ -195,7 +192,7 @@ static void
  winApplyHints(Display * pDisplay, Window iWindow, HWND hWnd, HWND * zstyle);
 
 void
- winUpdateWindowPosition(HWND hWnd, Bool reshape, HWND * zstyle);
+ winUpdateWindowPosition(HWND hWnd, HWND * zstyle);
 
 /*
  * Local globals
@@ -380,60 +377,41 @@ InitQueue(WMMsgQueuePtr pQueue)
     pQueue->nQueueSize = 0;
 
 #if CYGMULTIWINDOW_DEBUG
-    ErrorF("InitQueue - Queue Size %d %d\n", pQueue->nQueueSize,
-           QueueSize(pQueue));
+    winDebug("InitQueue - Queue Size %d %d\n", pQueue->nQueueSize,
+             QueueSize(pQueue));
 #endif
 
-    ErrorF("InitQueue - Calling pthread_mutex_init\n");
+    winDebug("InitQueue - Calling pthread_mutex_init\n");
 
     /* Create synchronization objects */
     pthread_mutex_init(&pQueue->pmMutex, NULL);
 
-    ErrorF("InitQueue - pthread_mutex_init returned\n");
-    ErrorF("InitQueue - Calling pthread_cond_init\n");
+    winDebug("InitQueue - pthread_mutex_init returned\n");
+    winDebug("InitQueue - Calling pthread_cond_init\n");
 
     pthread_cond_init(&pQueue->pcNotEmpty, NULL);
 
-    ErrorF("InitQueue - pthread_cond_init returned\n");
+    winDebug("InitQueue - pthread_cond_init returned\n");
 
     return TRUE;
 }
 
-/*
- * GetWindowName - Retrieve the title of an X Window
- */
-
-static void
-GetWindowName(Display * pDisplay, Window iWin, wchar_t ** ppName)
+static
+char *
+Xutf8TextPropertyToString(Display * pDisplay, XTextProperty * xtp)
 {
-    int nResult, nNum;
+    int nNum;
     char **ppList;
     char *pszReturnData;
-    int iLen, i;
-    XTextProperty xtpName;
 
-#if CYGMULTIWINDOW_DEBUG
-    ErrorF("GetWindowName\n");
-#endif
+    if (Xutf8TextPropertyToTextList(pDisplay, xtp, &ppList, &nNum) >= Success &&
+        nNum > 0 && *ppList) {
+        int i;
+        int iLen = 0;
 
-    /* Intialize ppName to NULL */
-    *ppName = NULL;
-
-    /* Try to get --- */
-    nResult = XGetWMName(pDisplay, iWin, &xtpName);
-    if (!nResult || !xtpName.value || !xtpName.nitems) {
-#if CYGMULTIWINDOW_DEBUG
-        ErrorF("GetWindowName - XGetWMName failed.  No name.\n");
-#endif
-        return;
-    }
-
-    if (Xutf8TextPropertyToTextList(pDisplay, &xtpName, &ppList, &nNum) >=
-        Success && nNum > 0 && *ppList) {
-        iLen = 0;
         for (i = 0; i < nNum; i++)
             iLen += strlen(ppList[i]);
-        pszReturnData = (char *) malloc(iLen + 1);
+        pszReturnData = malloc(iLen + 1);
         pszReturnData[0] = '\0';
         for (i = 0; i < nNum; i++)
             strcat(pszReturnData, ppList[i]);
@@ -441,18 +419,102 @@ GetWindowName(Display * pDisplay, Window iWin, wchar_t ** ppName)
             XFreeStringList(ppList);
     }
     else {
-        pszReturnData = (char *) malloc(1);
+        pszReturnData = malloc(1);
         pszReturnData[0] = '\0';
     }
-    iLen = MultiByteToWideChar(CP_UTF8, 0, pszReturnData, -1, NULL, 0);
-    *ppName = (wchar_t *) malloc(sizeof(wchar_t) * (iLen + 1));
-    MultiByteToWideChar(CP_UTF8, 0, pszReturnData, -1, *ppName, iLen);
-    XFree(xtpName.value);
-    free(pszReturnData);
+
+    return pszReturnData;
+}
+
+/*
+ * GetWindowName - Retrieve the title of an X Window
+ */
+
+static void
+GetWindowName(Display * pDisplay, Window iWin, char **ppWindowName)
+{
+    int nResult;
+    XTextProperty xtpWindowName;
+    XTextProperty xtpClientMachine;
+    char *pszWindowName;
+    char *pszClientMachine;
+    char hostname[HOST_NAME_MAX + 1];
 
 #if CYGMULTIWINDOW_DEBUG
-    ErrorF("GetWindowName - Returning\n");
+    ErrorF("GetWindowName\n");
 #endif
+
+    /* Intialize ppWindowName to NULL */
+    *ppWindowName = NULL;
+
+    /* Try to get window name */
+    nResult = XGetWMName(pDisplay, iWin, &xtpWindowName);
+    if (!nResult || !xtpWindowName.value || !xtpWindowName.nitems) {
+#if CYGMULTIWINDOW_DEBUG
+        ErrorF("GetWindowName - XGetWMName failed.  No name.\n");
+#endif
+        return;
+    }
+
+    pszWindowName = Xutf8TextPropertyToString(pDisplay, &xtpWindowName);
+    XFree(xtpWindowName.value);
+
+    if (g_fHostInTitle) {
+        /* Try to get client machine name */
+        nResult = XGetWMClientMachine(pDisplay, iWin, &xtpClientMachine);
+        if (nResult && xtpClientMachine.value && xtpClientMachine.nitems) {
+            pszClientMachine =
+                Xutf8TextPropertyToString(pDisplay, &xtpClientMachine);
+            XFree(xtpClientMachine.value);
+
+            /*
+               If we have a client machine name
+               and it's not the local host name
+               and it's not already in the window title...
+             */
+            if (strlen(pszClientMachine) &&
+                !gethostname(hostname, HOST_NAME_MAX + 1) &&
+                strcmp(hostname, pszClientMachine) &&
+                (strstr(pszWindowName, pszClientMachine) == 0)) {
+                /* ... add '@<clientmachine>' to end of window name */
+                *ppWindowName =
+                    malloc(strlen(pszWindowName) +
+                           strlen(pszClientMachine) + 2);
+                strcpy(*ppWindowName, pszWindowName);
+                strcat(*ppWindowName, "@");
+                strcat(*ppWindowName, pszClientMachine);
+
+                free(pszWindowName);
+                free(pszClientMachine);
+
+                return;
+            }
+        }
+    }
+
+    /* otherwise just return the window name */
+    *ppWindowName = pszWindowName;
+}
+
+/*
+ * Does the client support the specified WM_PROTOCOLS protocol?
+ */
+
+static Bool
+IsWmProtocolAvailable(Display * pDisplay, Window iWindow, Atom atmProtocol)
+{
+  int i, n, found = 0;
+  Atom *protocols;
+
+  if (XGetWMProtocols(pDisplay, iWindow, &protocols, &n)) {
+    for (i = 0; i < n; ++i)
+      if (protocols[i] == atmProtocol)
+        ++found;
+
+    XFree(protocols);
+  }
+
+  return found > 0;
 }
 
 /*
@@ -477,23 +539,23 @@ SendXMessage(Display * pDisplay, Window iWin, Atom atmType, long nData)
 }
 
 /*
- * Updates the name of a HWND according to its X WM_NAME property
+ * See if we can get the stored HWND for this window...
  */
-
-static void
-UpdateName(WMInfoPtr pWMInfo, Window iWindow)
+static HWND
+getHwnd(WMInfoPtr pWMInfo, Window iWindow)
 {
-    wchar_t *pszName;
     Atom atmType;
     int fmtRet;
     unsigned long items, remain;
-    HWND *retHwnd, hWnd;
-    XWindowAttributes attr;
+    HWND *retHwnd, hWnd = NULL;
 
-    hWnd = 0;
-
-    /* See if we can get the cached HWND for this window... */
-    if (XGetWindowProperty(pWMInfo->pDisplay, iWindow, pWMInfo->atmPrivMap, 0, 1, False, XA_INTEGER,    //pWMInfo->atmPrivMap,
+    if (XGetWindowProperty(pWMInfo->pDisplay,
+                           iWindow,
+                           pWMInfo->atmPrivMap,
+                           0,
+                           sizeof(HWND)/4,
+                           False,
+                           XA_INTEGER,
                            &atmType,
                            &fmtRet,
                            &items,
@@ -506,22 +568,130 @@ UpdateName(WMInfoPtr pWMInfo, Window iWindow)
 
     /* Some sanity checks */
     if (!hWnd)
-        return;
+        return NULL;
     if (!IsWindow(hWnd))
+        return NULL;
+
+    return hWnd;
+}
+
+/*
+ * Updates the name of a HWND according to its X WM_NAME property
+ */
+
+static void
+UpdateName(WMInfoPtr pWMInfo, Window iWindow)
+{
+    HWND hWnd;
+    XWindowAttributes attr;
+
+    hWnd = getHwnd(pWMInfo, iWindow);
+    if (!hWnd)
         return;
 
-    /* Set the Windows window name */
-    GetWindowName(pWMInfo->pDisplay, iWindow, &pszName);
-    if (pszName) {
-        /* Get the window attributes */
-        XGetWindowAttributes(pWMInfo->pDisplay, iWindow, &attr);
-        if (!attr.override_redirect) {
-            SetWindowTextW(hWnd, pszName);
-            winUpdateIcon(iWindow);
-        }
+    /* If window isn't override-redirect */
+    XGetWindowAttributes(pWMInfo->pDisplay, iWindow, &attr);
+    if (!attr.override_redirect) {
+        char *pszWindowName;
 
-        free(pszName);
+        /* Get the X windows window name */
+        GetWindowName(pWMInfo->pDisplay, iWindow, &pszWindowName);
+
+        if (pszWindowName) {
+            /* Convert from UTF-8 to wide char */
+            int iLen =
+                MultiByteToWideChar(CP_UTF8, 0, pszWindowName, -1, NULL, 0);
+            wchar_t *pwszWideWindowName =
+                malloc(sizeof(wchar_t)*(iLen + 1));
+            MultiByteToWideChar(CP_UTF8, 0, pszWindowName, -1,
+                                pwszWideWindowName, iLen);
+
+            /* Set the Windows window name */
+            SetWindowTextW(hWnd, pwszWideWindowName);
+
+            free(pwszWideWindowName);
+            free(pszWindowName);
+        }
     }
+}
+
+/*
+ * Updates the icon of a HWND according to its X icon properties
+ */
+
+static void
+UpdateIcon(WMInfoPtr pWMInfo, Window iWindow)
+{
+    HWND hWnd;
+    HICON hIconNew = NULL;
+    XWindowAttributes attr;
+
+    hWnd = getHwnd(pWMInfo, iWindow);
+    if (!hWnd)
+        return;
+
+    /* If window isn't override-redirect */
+    XGetWindowAttributes(pWMInfo->pDisplay, iWindow, &attr);
+    if (!attr.override_redirect) {
+        XClassHint class_hint = { 0, 0 };
+        char *window_name = 0;
+
+        if (XGetClassHint(pWMInfo->pDisplay, iWindow, &class_hint)) {
+            XFetchName(pWMInfo->pDisplay, iWindow, &window_name);
+
+            hIconNew =
+                (HICON) winOverrideIcon(class_hint.res_name,
+                                        class_hint.res_class, window_name);
+
+            if (class_hint.res_name)
+                XFree(class_hint.res_name);
+            if (class_hint.res_class)
+                XFree(class_hint.res_class);
+            if (window_name)
+                XFree(window_name);
+        }
+    }
+
+    winUpdateIcon(hWnd, pWMInfo->pDisplay, iWindow, hIconNew);
+}
+
+/*
+ * Updates the style of a HWND according to its X style properties
+ */
+
+static void
+UpdateStyle(WMInfoPtr pWMInfo, Window iWindow)
+{
+    HWND hWnd;
+    HWND zstyle = HWND_NOTOPMOST;
+    UINT flags;
+
+    hWnd = getHwnd(pWMInfo, iWindow);
+    if (!hWnd)
+        return;
+
+    /* Determine the Window style, which determines borders and clipping region... */
+    winApplyHints(pWMInfo->pDisplay, iWindow, hWnd, &zstyle);
+    winUpdateWindowPosition(hWnd, &zstyle);
+
+    /* Apply the updated window style, without changing it's show or activation state */
+    flags = SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE;
+    if (zstyle == HWND_NOTOPMOST)
+        flags |= SWP_NOZORDER | SWP_NOOWNERZORDER;
+    SetWindowPos(hWnd, NULL, 0, 0, 0, 0, flags);
+
+    /*
+       Use the WS_EX_TOOLWINDOW style to remove window from Alt-Tab window switcher
+
+       According to MSDN, this is supposed to remove the window from the taskbar as well,
+       if we SW_HIDE before changing the style followed by SW_SHOW afterwards.
+
+       But that doesn't seem to work reliably, and causes the window to flicker, so use
+       the iTaskbarList interface to tell the taskbar to show or hide this window.
+     */
+    winShowWindowOnTaskbar(hWnd,
+                           (GetWindowLongPtr(hWnd, GWL_EXSTYLE) &
+                            WS_EX_APPWINDOW) ? TRUE : FALSE);
 }
 
 #if 0
@@ -532,27 +702,12 @@ UpdateName(WMInfoPtr pWMInfo, Window iWindow)
 static void
 PreserveWin32Stack(WMInfoPtr pWMInfo, Window iWindow, UINT direction)
 {
-    Atom atmType;
-    int fmtRet;
-    unsigned long items, remain;
-    HWND hWnd, *retHwnd;
+    HWND hWnd;
     DWORD myWinProcID, winProcID;
     Window xWindow;
     WINDOWPLACEMENT wndPlace;
 
-    hWnd = NULL;
-    /* See if we can get the cached HWND for this window... */
-    if (XGetWindowProperty(pWMInfo->pDisplay, iWindow, pWMInfo->atmPrivMap, 0, 1, False, XA_INTEGER,    //pWMInfo->atmPrivMap,
-                           &atmType,
-                           &fmtRet,
-                           &items,
-                           &remain, (unsigned char **) &retHwnd) == Success) {
-        if (retHwnd) {
-            hWnd = *retHwnd;
-            XFree(retHwnd);
-        }
-    }
-
+    hWnd = getHwnd(pWMInfo, iWindow);
     if (!hWnd)
         return;
 
@@ -657,22 +812,22 @@ winMultiWindowWMProc(void *pArg)
             ErrorF("\tWM_WM_MAP\n");
 #endif
             /* Put a note as to the HWND associated with this Window */
-            XChangeProperty(pWMInfo->pDisplay, pNode->msg.iWindow, pWMInfo->atmPrivMap, XA_INTEGER,     //pWMInfo->atmPrivMap,
+            XChangeProperty(pWMInfo->pDisplay, pNode->msg.iWindow, pWMInfo->atmPrivMap, XA_INTEGER,
                             32,
                             PropModeReplace,
-                            (unsigned char *) &(pNode->msg.hwndWindow), 1);
+                            (unsigned char *) &(pNode->msg.hwndWindow), sizeof(HWND)/4);
             UpdateName(pWMInfo, pNode->msg.iWindow);
-            winUpdateIcon(pNode->msg.iWindow);
+            UpdateIcon(pWMInfo, pNode->msg.iWindow);
             break;
 
         case WM_WM_MAP2:
 #if CYGMULTIWINDOW_DEBUG
             ErrorF("\tWM_WM_MAP2\n");
 #endif
-            XChangeProperty(pWMInfo->pDisplay, pNode->msg.iWindow, pWMInfo->atmPrivMap, XA_INTEGER,     //pWMInfo->atmPrivMap,
+            XChangeProperty(pWMInfo->pDisplay, pNode->msg.iWindow, pWMInfo->atmPrivMap, XA_INTEGER,
                             32,
                             PropModeReplace,
-                            (unsigned char *) &(pNode->msg.hwndWindow), 1);
+                            (unsigned char *) &(pNode->msg.hwndWindow), sizeof(HWND)/4);
             break;
 
         case WM_WM_MAP3:
@@ -680,19 +835,25 @@ winMultiWindowWMProc(void *pArg)
             ErrorF("\tWM_WM_MAP3\n");
 #endif
             /* Put a note as to the HWND associated with this Window */
-            XChangeProperty(pWMInfo->pDisplay, pNode->msg.iWindow, pWMInfo->atmPrivMap, XA_INTEGER,     //pWMInfo->atmPrivMap,
+            XChangeProperty(pWMInfo->pDisplay, pNode->msg.iWindow, pWMInfo->atmPrivMap, XA_INTEGER,
                             32,
                             PropModeReplace,
-                            (unsigned char *) &(pNode->msg.hwndWindow), 1);
+                            (unsigned char *) &(pNode->msg.hwndWindow), sizeof(HWND)/4);
             UpdateName(pWMInfo, pNode->msg.iWindow);
-            winUpdateIcon(pNode->msg.iWindow);
-            {
-                HWND zstyle = HWND_NOTOPMOST;
+            UpdateIcon(pWMInfo, pNode->msg.iWindow);
+            UpdateStyle(pWMInfo, pNode->msg.iWindow);
 
-                winApplyHints(pWMInfo->pDisplay, pNode->msg.iWindow,
-                              pNode->msg.hwndWindow, &zstyle);
-                winUpdateWindowPosition(pNode->msg.hwndWindow, TRUE, &zstyle);
+
+            /* Reshape */
+            {
+                WindowPtr pWin =
+                    GetProp(pNode->msg.hwndWindow, WIN_WINDOW_PROP);
+                if (pWin) {
+                    winReshapeMultiWindow(pWin);
+                    winUpdateRgnMultiWindow(pWin);
+                }
             }
+
             break;
 
         case WM_WM_UNMAP:
@@ -709,21 +870,10 @@ winMultiWindowWMProc(void *pArg)
             ErrorF("\tWM_WM_KILL\n");
 #endif
             {
-                int i, n, found = 0;
-                Atom *protocols;
-
                 /* --- */
-                if (XGetWMProtocols(pWMInfo->pDisplay,
-                                    pNode->msg.iWindow, &protocols, &n)) {
-                    for (i = 0; i < n; ++i)
-                        if (protocols[i] == pWMInfo->atmWmDelete)
-                            ++found;
-
-                    XFree(protocols);
-                }
-
-                /* --- */
-                if (found)
+                if (IsWmProtocolAvailable(pWMInfo->pDisplay,
+                                          pNode->msg.iWindow,
+                                          pWMInfo->atmWmDelete))
                     SendXMessage(pWMInfo->pDisplay,
                                  pNode->msg.iWindow,
                                  pWMInfo->atmWmProtos, pWMInfo->atmWmDelete);
@@ -736,19 +886,60 @@ winMultiWindowWMProc(void *pArg)
 #if CYGMULTIWINDOW_DEBUG
             ErrorF("\tWM_WM_ACTIVATE\n");
 #endif
-
             /* Set the input focus */
-            XSetInputFocus(pWMInfo->pDisplay,
-                           pNode->msg.iWindow,
-                           RevertToPointerRoot, CurrentTime);
+
+            /*
+               ICCCM 4.1.7 is pretty opaque, but it appears that the rules are
+               actually quite simple:
+               -- the WM_HINTS input field determines whether the WM should call
+               XSetInputFocus()
+               -- independently, the WM_TAKE_FOCUS protocol determines whether
+               the WM should send a WM_TAKE_FOCUS ClientMessage.
+            */
+            {
+              Bool neverFocus = FALSE;
+              XWMHints *hints = XGetWMHints(pWMInfo->pDisplay, pNode->msg.iWindow);
+
+              if (hints) {
+                if (hints->flags & InputHint)
+                  neverFocus = !hints->input;
+                XFree(hints);
+              }
+
+              if (!neverFocus)
+                XSetInputFocus(pWMInfo->pDisplay,
+                               pNode->msg.iWindow,
+                               RevertToPointerRoot, CurrentTime);
+
+              if (IsWmProtocolAvailable(pWMInfo->pDisplay,
+                                        pNode->msg.iWindow,
+                                        pWMInfo->atmWmTakeFocus))
+                SendXMessage(pWMInfo->pDisplay,
+                             pNode->msg.iWindow,
+                             pWMInfo->atmWmProtos, pWMInfo->atmWmTakeFocus);
+
+            }
             break;
 
         case WM_WM_NAME_EVENT:
             UpdateName(pWMInfo, pNode->msg.iWindow);
             break;
 
+        case WM_WM_ICON_EVENT:
+            UpdateIcon(pWMInfo, pNode->msg.iWindow);
+            break;
+
         case WM_WM_HINTS_EVENT:
-            winUpdateIcon(pNode->msg.iWindow);
+            {
+            XWindowAttributes attr;
+
+            /* Don't do anything if this is an override-redirect window */
+            XGetWindowAttributes (pWMInfo->pDisplay, pNode->msg.iWindow, &attr);
+            if (attr.override_redirect)
+              break;
+
+            UpdateStyle(pWMInfo, pNode->msg.iWindow);
+            }
             break;
 
         case WM_WM_CHANGE_STATE:
@@ -799,10 +990,12 @@ winMultiWindowXMsgProc(void *pArg)
     Atom atmWmName;
     Atom atmWmHints;
     Atom atmWmChange;
+    Atom atmNetWmIcon;
+    Atom atmWindowState, atmMotifWmHints, atmWindowType, atmNormalHints;
     int iReturn;
     XIconSize *xis;
 
-    ErrorF("winMultiWindowXMsgProc - Hello\n");
+    winDebug("winMultiWindowXMsgProc - Hello\n");
 
     /* Check that argument pointer is not invalid */
     if (pProcArg == NULL) {
@@ -924,6 +1117,11 @@ winMultiWindowXMsgProc(void *pArg)
     atmWmName = XInternAtom(pProcArg->pDisplay, "WM_NAME", False);
     atmWmHints = XInternAtom(pProcArg->pDisplay, "WM_HINTS", False);
     atmWmChange = XInternAtom(pProcArg->pDisplay, "WM_CHANGE_STATE", False);
+    atmNetWmIcon = XInternAtom(pProcArg->pDisplay, "_NET_WM_ICON", False);
+    atmWindowState = XInternAtom(pProcArg->pDisplay, "_NET_WM_STATE", False);
+    atmMotifWmHints = XInternAtom(pProcArg->pDisplay, "_MOTIF_WM_HINTS", False);
+    atmWindowType = XInternAtom(pProcArg->pDisplay, "_NET_WM_WINDOW_TYPE", False);
+    atmNormalHints = XInternAtom(pProcArg->pDisplay, "WM_NORMAL_HINTS", False);
 
     /*
        iiimxcf had a bug until 2009-04-27, assuming that the
@@ -945,15 +1143,13 @@ winMultiWindowXMsgProc(void *pArg)
                 (pProcArg->pDisplay, pProcArg->dwScreen, TRUE)) {
                 if (!g_fAnotherWMRunning) {
                     g_fAnotherWMRunning = TRUE;
-                    SendMessage(*(HWND *) pProcArg->hwndScreen, WM_UNMANAGE, 0,
-                                0);
+                    SendMessage(pProcArg->hwndScreen, WM_UNMANAGE, 0, 0);
                 }
             }
             else {
                 if (g_fAnotherWMRunning) {
                     g_fAnotherWMRunning = FALSE;
-                    SendMessage(*(HWND *) pProcArg->hwndScreen, WM_MANAGE, 0,
-                                0);
+                    SendMessage(pProcArg->hwndScreen, WM_MANAGE, 0, 0);
                 }
             }
             Sleep(500);
@@ -1051,25 +1247,45 @@ winMultiWindowXMsgProc(void *pArg)
                            True, StructureNotifyMask, &event_send);
             }
         }
-        else if (event.type == PropertyNotify
-                 && event.xproperty.atom == atmWmName) {
-            memset(&msg, 0, sizeof(msg));
+        else if (event.type == PropertyNotify) {
+            if (event.xproperty.atom == atmWmName) {
+                memset(&msg, 0, sizeof(msg));
 
-            msg.msg = WM_WM_NAME_EVENT;
-            msg.iWindow = event.xproperty.window;
+                msg.msg = WM_WM_NAME_EVENT;
+                msg.iWindow = event.xproperty.window;
 
-            /* Other fields ignored */
-            winSendMessageToWM(pProcArg->pWMInfo, &msg);
-        }
-        else if (event.type == PropertyNotify
-                 && event.xproperty.atom == atmWmHints) {
-            memset(&msg, 0, sizeof(msg));
+                /* Other fields ignored */
+                winSendMessageToWM(pProcArg->pWMInfo, &msg);
+            }
+            else {
+                /*
+                   Several properties are considered for WM hints, check if this property change affects any of them...
+                   (this list needs to be kept in sync with winApplyHints())
+                 */
+                if ((event.xproperty.atom == atmWmHints) ||
+                    (event.xproperty.atom == atmWindowState) ||
+                    (event.xproperty.atom == atmMotifWmHints) ||
+                    (event.xproperty.atom == atmWindowType) ||
+                    (event.xproperty.atom == atmNormalHints)) {
+                    memset(&msg, 0, sizeof(msg));
+                    msg.msg = WM_WM_HINTS_EVENT;
+                    msg.iWindow = event.xproperty.window;
 
-            msg.msg = WM_WM_HINTS_EVENT;
-            msg.iWindow = event.xproperty.window;
+                    /* Other fields ignored */
+                    winSendMessageToWM(pProcArg->pWMInfo, &msg);
+                }
 
-            /* Other fields ignored */
-            winSendMessageToWM(pProcArg->pWMInfo, &msg);
+                /* Not an else as WM_HINTS affects both style and icon */
+                if ((event.xproperty.atom == atmWmHints) ||
+                    (event.xproperty.atom == atmNetWmIcon)) {
+                    memset(&msg, 0, sizeof(msg));
+                    msg.msg = WM_WM_ICON_EVENT;
+                    msg.iWindow = event.xproperty.window;
+
+                    /* Other fields ignored */
+                    winSendMessageToWM(pProcArg->pWMInfo, &msg);
+                }
+            }
         }
         else if (event.type == ClientMessage
                  && event.xclient.message_type == atmWmChange
@@ -1103,9 +1319,9 @@ winInitWM(void **ppWMInfo,
           pthread_mutex_t * ppmServerStarted,
           int dwScreen, HWND hwndScreen, BOOL allowOtherWM)
 {
-    WMProcArgPtr pArg = (WMProcArgPtr) malloc(sizeof(WMProcArgRec));
-    WMInfoPtr pWMInfo = (WMInfoPtr) malloc(sizeof(WMInfoRec));
-    XMsgProcArgPtr pXMsgArg = (XMsgProcArgPtr) malloc(sizeof(XMsgProcArgRec));
+    WMProcArgPtr pArg = malloc(sizeof(WMProcArgRec));
+    WMInfoPtr pWMInfo = malloc(sizeof(WMInfoRec));
+    XMsgProcArgPtr pXMsgArg = malloc(sizeof(XMsgProcArgRec));
 
     /* Bail if the input parameters are bad */
     if (pArg == NULL || pWMInfo == NULL || pXMsgArg == NULL) {
@@ -1172,7 +1388,7 @@ winInitMultiWindowWM(WMInfoPtr pWMInfo, WMProcArgPtr pProcArg)
     char pszDisplay[512];
     int iReturn;
 
-    ErrorF("winInitMultiWindowWM - Hello\n");
+    winDebug("winInitMultiWindowWM - Hello\n");
 
     /* Check that argument pointer is not invalid */
     if (pProcArg == NULL) {
@@ -1270,6 +1486,8 @@ winInitMultiWindowWM(WMInfoPtr pWMInfo, WMProcArgPtr pProcArg)
                                        "WM_PROTOCOLS", False);
     pWMInfo->atmWmDelete = XInternAtom(pWMInfo->pDisplay,
                                        "WM_DELETE_WINDOW", False);
+    pWMInfo->atmWmTakeFocus = XInternAtom(pWMInfo->pDisplay,
+                                       "WM_TAKE_FOCUS", False);
 
     pWMInfo->atmPrivMap = XInternAtom(pWMInfo->pDisplay,
                                       WINDOWSWM_NATIVE_HWND, False);
@@ -1298,7 +1516,7 @@ winSendMessageToWM(void *pWMInfo, winWMMessagePtr pMsg)
     ErrorF("winSendMessageToWM ()\n");
 #endif
 
-    pNode = (WMMsgNodePtr) malloc(sizeof(WMMsgNodeRec));
+    pNode = malloc(sizeof(WMMsgNodeRec));
     if (pNode != NULL) {
         memcpy(&pNode->msg, pMsg, sizeof(winWMMessageRec));
         PushMessage(&((WMInfoPtr) pWMInfo)->wmMsgQueue, pNode);
@@ -1334,7 +1552,7 @@ winMultiWindowWMErrorHandler(Display * pDisplay, XErrorEvent * pErr)
 static int
 winMultiWindowWMIOErrorHandler(Display * pDisplay)
 {
-    ErrorF("winMultiWindowWMIOErrorHandler!\n\n");
+    ErrorF("winMultiWindowWMIOErrorHandler!\n");
 
     if (pthread_equal(pthread_self(), g_winMultiWindowWMThread)) {
         if (g_shutdown)
@@ -1374,7 +1592,7 @@ winMultiWindowXMsgProcErrorHandler(Display * pDisplay, XErrorEvent * pErr)
 static int
 winMultiWindowXMsgProcIOErrorHandler(Display * pDisplay)
 {
-    ErrorF("winMultiWindowXMsgProcIOErrorHandler!\n\n");
+    ErrorF("winMultiWindowXMsgProcIOErrorHandler!\n");
 
     if (pthread_equal(pthread_self(), g_winMultiWindowXMsgProcThread)) {
         /* Restart at the main entry point */
@@ -1443,13 +1661,14 @@ winDeinitMultiWindowWM(void)
 }
 
 /* Windows window styles */
-#define HINT_NOFRAME	(1l<<0)
+#define HINT_NOFRAME	(1L<<0)
 #define HINT_BORDER	(1L<<1)
-#define HINT_SIZEBOX	(1l<<2)
-#define HINT_CAPTION	(1l<<3)
+#define HINT_SIZEBOX	(1L<<2)
+#define HINT_CAPTION	(1L<<3)
 #define HINT_NOMAXIMIZE (1L<<4)
 #define HINT_NOMINIMIZE (1L<<5)
 #define HINT_NOSYSMENU  (1L<<6)
+#define HINT_SKIPTASKBAR (1L<<7)
 /* These two are used on their own */
 #define HINT_MAX	(1L<<0)
 #define HINT_MIN	(1L<<1)
@@ -1458,12 +1677,14 @@ static void
 winApplyHints(Display * pDisplay, Window iWindow, HWND hWnd, HWND * zstyle)
 {
     static Atom windowState, motif_wm_hints, windowType;
-    static Atom hiddenState, fullscreenState, belowState, aboveState;
+    static Atom hiddenState, fullscreenState, belowState, aboveState,
+        skiptaskbarState;
     static Atom dockWindow;
     static int generation;
     Atom type, *pAtom = NULL;
     int format;
-    unsigned long hint = 0, maxmin = 0, style, nitems = 0, left = 0;
+    unsigned long hint = 0, maxmin = 0, nitems = 0, left = 0;
+    unsigned long style, exStyle;
     MwmHints *mwm_hint = NULL;
 
     if (!hWnd)
@@ -1482,24 +1703,32 @@ winApplyHints(Display * pDisplay, Window iWindow, HWND hWnd, HWND * zstyle)
         belowState = XInternAtom(pDisplay, "_NET_WM_STATE_BELOW", False);
         aboveState = XInternAtom(pDisplay, "_NET_WM_STATE_ABOVE", False);
         dockWindow = XInternAtom(pDisplay, "_NET_WM_WINDOW_TYPE_DOCK", False);
+        skiptaskbarState =
+            XInternAtom(pDisplay, "_NET_WM_STATE_SKIP_TASKBAR", False);
     }
 
     if (XGetWindowProperty(pDisplay, iWindow, windowState, 0L,
-                           1L, False, XA_ATOM, &type, &format,
+                           MAXINT, False, XA_ATOM, &type, &format,
                            &nitems, &left,
                            (unsigned char **) &pAtom) == Success) {
-        if (pAtom && nitems == 1) {
-            if (*pAtom == hiddenState)
-                maxmin |= HINT_MIN;
-            else if (*pAtom == fullscreenState)
-                maxmin |= HINT_MAX;
-            if (*pAtom == belowState)
-                *zstyle = HWND_BOTTOM;
-            else if (*pAtom == aboveState)
-                *zstyle = HWND_TOPMOST;
-        }
-        if (pAtom)
+        if (pAtom ) {
+            unsigned long i;
+
+            for (i = 0; i < nitems; i++) {
+                if (pAtom[i] == skiptaskbarState)
+                    hint |= HINT_SKIPTASKBAR;
+                if (pAtom[i] == hiddenState)
+                    maxmin |= HINT_MIN;
+                else if (pAtom[i] == fullscreenState)
+                    maxmin |= HINT_MAX;
+                if (pAtom[i] == belowState)
+                    *zstyle = HWND_BOTTOM;
+                else if (pAtom[i] == aboveState)
+                    *zstyle = HWND_TOPMOST;
+            }
+
             XFree(pAtom);
+        }
     }
 
     nitems = left = 0;
@@ -1577,10 +1806,14 @@ winApplyHints(Display * pDisplay, Window iWindow, HWND hWnd, HWND * zstyle)
         XFree(normal_hint);
     }
 
-    /* Override hint settings from above with settings from config file */
+    /*
+       Override hint settings from above with settings from config file and set
+       application id for grouping.
+     */
     {
         XClassHint class_hint = { 0, 0 };
         char *window_name = 0;
+        char *application_id = 0;
 
         if (XGetClassHint(pDisplay, iWindow, &class_hint)) {
             XFetchName(pDisplay, iWindow, &window_name);
@@ -1589,10 +1822,24 @@ winApplyHints(Display * pDisplay, Window iWindow, HWND hWnd, HWND * zstyle)
                 winOverrideStyle(class_hint.res_name, class_hint.res_class,
                                  window_name);
 
+#define APPLICATION_ID_FORMAT	"%s.xwin.%s"
+#define APPLICATION_ID_UNKNOWN "unknown"
+            if (class_hint.res_class) {
+                asprintf(&application_id, APPLICATION_ID_FORMAT, XVENDORNAME,
+                         class_hint.res_class);
+            }
+            else {
+                asprintf(&application_id, APPLICATION_ID_FORMAT, XVENDORNAME,
+                         APPLICATION_ID_UNKNOWN);
+            }
+            winSetAppUserModelID(hWnd, application_id);
+
             if (class_hint.res_name)
                 XFree(class_hint.res_name);
             if (class_hint.res_class)
                 XFree(class_hint.res_class);
+            if (application_id)
+                free(application_id);
             if (window_name)
                 XFree(window_name);
         }
@@ -1629,13 +1876,15 @@ winApplyHints(Display * pDisplay, Window iWindow, HWND hWnd, HWND * zstyle)
             HINT_NOFRAME;
 
     /* Now apply styles to window */
-    style = GetWindowLongPtr(hWnd, GWL_STYLE) & ~WS_CAPTION & ~WS_SIZEBOX;      /* Just in case */
+    style = GetWindowLongPtr(hWnd, GWL_STYLE);
     if (!style)
-        return;
+        return;                 /* GetWindowLongPointer returns 0 on failure, we hope this isn't a valid style */
 
-    if (!hint)                  /* All on */
+    style &= ~WS_CAPTION & ~WS_SIZEBOX; /* Just in case */
+
+    if (!(hint & ~HINT_SKIPTASKBAR))    /* No hints, default */
         style = style | WS_CAPTION | WS_SIZEBOX;
-    else if (hint & HINT_NOFRAME)       /* All off */
+    else if (hint & HINT_NOFRAME)       /* No frame, no decorations */
         style = style & ~WS_CAPTION & ~WS_SIZEBOX;
     else
         style = style | ((hint & HINT_BORDER) ? WS_BORDER : 0) |
@@ -1651,11 +1900,25 @@ winApplyHints(Display * pDisplay, Window iWindow, HWND hWnd, HWND * zstyle)
     if (hint & HINT_NOSYSMENU)
         style = style & ~WS_SYSMENU;
 
+    if (hint & HINT_SKIPTASKBAR)
+        style = style & ~WS_MINIMIZEBOX;        /* window will become lost if minimized */
+
     SetWindowLongPtr(hWnd, GWL_STYLE, style);
+
+    exStyle = GetWindowLongPtr(hWnd, GWL_EXSTYLE);
+    if (hint & HINT_SKIPTASKBAR)
+        exStyle = (exStyle & ~WS_EX_APPWINDOW) | WS_EX_TOOLWINDOW;
+    else
+        exStyle = (exStyle & ~WS_EX_TOOLWINDOW) | WS_EX_APPWINDOW;
+    SetWindowLongPtr(hWnd, GWL_EXSTYLE, exStyle);
+
+    winDebug
+        ("winApplyHints: iWindow 0x%08x hints 0x%08x style 0x%08x exstyle 0x%08x\n",
+         iWindow, hint, style, exStyle);
 }
 
 void
-winUpdateWindowPosition(HWND hWnd, Bool reshape, HWND * zstyle)
+winUpdateWindowPosition(HWND hWnd, HWND * zstyle)
 {
     int iX, iY, iWidth, iHeight;
     int iDx, iDy;
@@ -1680,13 +1943,11 @@ winUpdateWindowPosition(HWND hWnd, Bool reshape, HWND * zstyle)
     /* Setup a rectangle with the X window position and size */
     SetRect(&rcNew, iX, iY, iX + iWidth, iY + iHeight);
 
-#if 0
-    ErrorF("winUpdateWindowPosition - (%d, %d)-(%d, %d)\n",
-           rcNew.left, rcNew.top, rcNew.right, rcNew.bottom);
-#endif
+    winDebug("winUpdateWindowPosition - drawable extent (%d, %d)-(%d, %d)\n",
+             rcNew.left, rcNew.top, rcNew.right, rcNew.bottom);
 
     AdjustWindowRectEx(&rcNew, GetWindowLongPtr(hWnd, GWL_STYLE), FALSE,
-                       WS_EX_APPWINDOW);
+                       GetWindowLongPtr(hWnd, GWL_EXSTYLE));
 
     /* Don't allow window decoration to disappear off to top-left as a result of this adjustment */
     if (rcNew.left < GetSystemMetrics(SM_XVIRTUALSCREEN)) {
@@ -1701,17 +1962,11 @@ winUpdateWindowPosition(HWND hWnd, Bool reshape, HWND * zstyle)
         rcNew.bottom += iDy;
     }
 
-#if 0
-    ErrorF("winUpdateWindowPosition - (%d, %d)-(%d, %d)\n",
-           rcNew.left, rcNew.top, rcNew.right, rcNew.bottom);
-#endif
+    winDebug("winUpdateWindowPosition - Window extent (%d, %d)-(%d, %d)\n",
+             rcNew.left, rcNew.top, rcNew.right, rcNew.bottom);
 
     /* Position the Windows window */
     SetWindowPos(hWnd, *zstyle, rcNew.left, rcNew.top,
                  rcNew.right - rcNew.left, rcNew.bottom - rcNew.top, 0);
 
-    if (reshape) {
-        winReshapeMultiWindow(pWin);
-        winUpdateRgnMultiWindow(pWin);
-    }
 }
