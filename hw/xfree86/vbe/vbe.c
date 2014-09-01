@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "xf86.h"
+#include "xf86Modes.h"
 #include "vbe.h"
 #include <X11/extensions/dpmsconst.h>
 
@@ -49,7 +50,7 @@ vbeInfoPtr
 VBEExtendedInit(xf86Int10InfoPtr pInt, int entityIndex, int Flags)
 {
     int RealOff;
-    pointer page = NULL;
+    void *page = NULL;
     ScrnInfoPtr pScrn = xf86FindScreenForEntity(entityIndex);
     vbeControllerInfoPtr vbe = NULL;
     Bool init_int10 = FALSE;
@@ -179,7 +180,7 @@ static Bool
 vbeProbeDDC(vbeInfoPtr pVbe)
 {
     const char *ddc_level;
-    int screen = pVbe->pInt10->scrnIndex;
+    int screen = pVbe->pInt10->pScrn->scrnIndex;
 
     if (pVbe->ddc == DDC_NONE)
         return FALSE;
@@ -258,11 +259,12 @@ static unsigned char *
 vbeReadEDID(vbeInfoPtr pVbe)
 {
     int RealOff = pVbe->real_mode_base;
-    pointer page = pVbe->memory;
+    void *page = pVbe->memory;
     unsigned char *tmp = NULL;
     Bool novbe = FALSE;
     Bool noddc = FALSE;
-    int screen = pVbe->pInt10->scrnIndex;
+    ScrnInfoPtr pScrn = pVbe->pInt10->pScrn;
+    int screen = pScrn->scrnIndex;
     OptionInfoPtr options;
 
     if (!page)
@@ -270,7 +272,7 @@ vbeReadEDID(vbeInfoPtr pVbe)
 
     options = xnfalloc(sizeof(VBEOptions));
     (void) memcpy(options, VBEOptions, sizeof(VBEOptions));
-    xf86ProcessOptions(screen, xf86Screens[screen]->options, options);
+    xf86ProcessOptions(screen, pScrn->options, options);
     xf86GetOptValBool(options, VBEOPT_NOVBE, &novbe);
     xf86GetOptValBool(options, VBEOPT_NODDC, &noddc);
     free(options);
@@ -317,10 +319,8 @@ vbeReadEDID(vbeInfoPtr pVbe)
 }
 
 xf86MonPtr
-vbeDoEDID(vbeInfoPtr pVbe, pointer pDDCModule)
+vbeDoEDID(vbeInfoPtr pVbe, void *unused)
 {
-    xf86MonPtr pMonitor;
-    pointer pModule;
     unsigned char *DDC_data = NULL;
 
     if (!pVbe)
@@ -328,23 +328,12 @@ vbeDoEDID(vbeInfoPtr pVbe, pointer pDDCModule)
     if (pVbe->version < 0x200)
         return NULL;
 
-    if (!(pModule = pDDCModule)) {
-        pModule =
-            xf86LoadSubModule(xf86Screens[pVbe->pInt10->scrnIndex], "ddc");
-        if (!pModule)
-            return NULL;
-    }
-
     DDC_data = vbeReadEDID(pVbe);
 
     if (!DDC_data)
         return NULL;
 
-    pMonitor = xf86InterpretEDID(pVbe->pInt10->scrnIndex, DDC_data);
-
-    if (!pDDCModule)
-        xf86UnloadSubModule(pModule);
-    return pMonitor;
+    return xf86InterpretEDID(pVbe->pInt10->pScrn->scrnIndex, DDC_data);
 }
 
 #define GET_UNALIGNED2(x) \
@@ -556,7 +545,7 @@ VBEFreeModeInfo(VbeModeInfoBlock * block)
 
 Bool
 VBESaveRestore(vbeInfoPtr pVbe, vbeSaveRestoreFunction function,
-               pointer *memory, int *size, int *real_mode_pages)
+               void **memory, int *size, int *real_mode_pages)
 {
     /*
        Input:
@@ -598,7 +587,7 @@ VBESaveRestore(vbeInfoPtr pVbe, vbeSaveRestoreFunction function,
      */
 
     if ((pVbe->version & 0xff00) > 0x100) {
-        int screen = pVbe->pInt10->scrnIndex;
+        int screen = pVbe->pInt10->pScrn->scrnIndex;
 
         if (function == MODE_QUERY || (function == MODE_SAVE && !*memory)) {
             /* Query amount of memory to save state */
@@ -904,7 +893,7 @@ VBEBuildVbeModeList(vbeInfoPtr pVbe, VbeInfoBlock * vbe)
         m->n = id;
         m->next = ModeList;
 
-        xf86DrvMsgVerb(pVbe->pInt10->scrnIndex, X_PROBED, 3,
+        xf86DrvMsgVerb(pVbe->pInt10->pScrn->scrnIndex, X_PROBED, 3,
                        "BIOS reported VESA mode 0x%x: x:%i y:%i bpp:%i\n",
                        m->n, m->width, m->height, m->bpp);
 
@@ -940,7 +929,7 @@ VBEVesaSaveRestore(vbeInfoPtr pVbe, vbeSaveRestorePtr vbe_sr,
             memcpy(vbe_sr->state, vbe_sr->pstate, vbe_sr->stateSize);
         ErrorF("VBESaveRestore\n");
         if ((VBESaveRestore(pVbe, function,
-                            (pointer) &vbe_sr->state,
+                            (void *) &vbe_sr->state,
                             &vbe_sr->stateSize, &vbe_sr->statePage))) {
             if (function == MODE_SAVE) {
                 SaveSucc = TRUE;
@@ -1026,23 +1015,22 @@ VBEDPMSSet(vbeInfoPtr pVbe, int mode)
 }
 
 void
-VBEInterpretPanelID(int scrnIndex, struct vbePanelID *data)
+VBEInterpretPanelID(ScrnInfoPtr pScrn, struct vbePanelID *data)
 {
-    ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
     DisplayModePtr mode;
     const float PANEL_HZ = 60.0;
 
     if (!data)
         return;
 
-    xf86DrvMsg(scrnIndex, X_INFO, "PanelID returned panel resolution %dx%d\n",
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "PanelID returned panel resolution %dx%d\n",
                data->hsize, data->vsize);
 
     if (pScrn->monitor->nHsync || pScrn->monitor->nVrefresh)
         return;
 
     if (data->hsize < 320 || data->vsize < 240) {
-        xf86DrvMsg(scrnIndex, X_INFO, "...which I refuse to believe\n");
+        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "...which I refuse to believe\n");
         return;
     }
 
@@ -1067,9 +1055,9 @@ struct vbePanelID *
 VBEReadPanelID(vbeInfoPtr pVbe)
 {
     int RealOff = pVbe->real_mode_base;
-    pointer page = pVbe->memory;
+    void *page = pVbe->memory;
     void *tmp = NULL;
-    int screen = pVbe->pInt10->scrnIndex;
+    int screen = pVbe->pInt10->pScrn->scrnIndex;
 
     pVbe->pInt10->ax = 0x4F11;
     pVbe->pInt10->bx = 0x01;

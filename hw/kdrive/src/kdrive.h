@@ -32,7 +32,6 @@
 #include "pixmapstr.h"
 #include "windowstr.h"
 #include "servermd.h"
-#include "mibstore.h"
 #include "colormapst.h"
 #include "gcstruct.h"
 #include "input.h"
@@ -175,7 +174,7 @@ typedef enum _kdPointerState {
 typedef struct _KdPointerInfo KdPointerInfo;
 
 typedef struct _KdPointerDriver {
-    char *name;
+    const char *name;
      Status(*Init) (KdPointerInfo *);
      Status(*Enable) (KdPointerInfo *);
     void (*Disable) (KdPointerInfo *);
@@ -244,7 +243,7 @@ typedef struct {
 typedef struct _KdKeyboardInfo KdKeyboardInfo;
 
 typedef struct _KdKeyboardDriver {
-    char *name;
+    const char *name;
     Bool (*Init) (KdKeyboardInfo *);
     Bool (*Enable) (KdKeyboardInfo *);
     void (*Leds) (KdKeyboardInfo *, int);
@@ -412,13 +411,14 @@ Rotation KdAddRotation(Rotation a, Rotation b);
 Rotation KdSubRotation(Rotation a, Rotation b);
 
 void
- KdParseScreen(KdScreenInfo * screen, char *arg);
+ KdParseScreen(KdScreenInfo * screen, const char *arg);
 
-KdPointerInfo *KdParsePointer(char *arg);
+KdPointerInfo *KdParsePointer(const char *arg);
 
-KdKeyboardInfo *KdParseKeyboard(char *arg);
+KdKeyboardInfo *KdParseKeyboard(const char *arg);
 
-char *KdParseFindNext(char *cur, const char *delim, char *save, char *last);
+const char *
+KdParseFindNext(const char *cur, const char *delim, char *save, char *last);
 
 void
  KdParseRgba(char *rgba);
@@ -442,13 +442,13 @@ Bool
  KdCreateScreenResources(ScreenPtr pScreen);
 
 Bool
- KdCloseScreen(int index, ScreenPtr pScreen);
+ KdCloseScreen(ScreenPtr pScreen);
 
 Bool
  KdSaveScreen(ScreenPtr pScreen, int on);
 
 Bool
- KdScreenInit(int index, ScreenPtr pScreen, int argc, char **argv);
+ KdScreenInit(ScreenPtr pScreen, int argc, char **argv);
 
 void
 
@@ -506,6 +506,7 @@ KdEnqueueKeyboardEvent(KdKeyboardInfo * ki, unsigned char scan_code,
 #define KD_BUTTON_4	0x08
 #define KD_BUTTON_5	0x10
 #define KD_BUTTON_8	0x80
+#define KD_POINTER_DESKTOP 0x40000000
 #define KD_MOUSE_DELTA	0x80000000
 
 void
@@ -525,11 +526,11 @@ void
  KdSetLed(KdKeyboardInfo * ki, int led, Bool on);
 
 void
- KdSetPointerMatrix(KdPointerMatrix * pointer);
+ KdSetPointerMatrix(KdPointerMatrix *pointer);
 
 void
 
-KdComputePointerMatrix(KdPointerMatrix * pointer, Rotation randr, int width,
+KdComputePointerMatrix(KdPointerMatrix *pointer, Rotation randr, int width,
                        int height);
 
 void
@@ -537,22 +538,17 @@ void
 
 void
 
-KdBlockHandler(int screen,
-               pointer blockData, pointer timeout, pointer readmask);
+KdBlockHandler(ScreenPtr pScreen, void *timeout, void *readmask);
 
 void
 
-KdWakeupHandler(int screen,
-                pointer data, unsigned long result, pointer readmask);
+KdWakeupHandler(ScreenPtr pScreen, unsigned long result, void *readmask);
 
 void
  KdDisableInput(void);
 
 void
  KdEnableInput(void);
-
-void
- ProcessInputEvents(void);
 
 void
  KdRingBell(KdKeyboardInfo * ki, int volume, int pitch, int duration);

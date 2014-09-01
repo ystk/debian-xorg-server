@@ -44,7 +44,7 @@ static void
  winShadowUpdateNativeGDI(ScreenPtr pScreen, shadowBufPtr pBuf);
 
 static Bool
- winCloseScreenNativeGDI(int nIndex, ScreenPtr pScreen);
+ winCloseScreenNativeGDI(ScreenPtr pScreen);
 
 static Bool
  winInitVisualsNativeGDI(ScreenPtr pScreen);
@@ -104,7 +104,7 @@ winInitScreenNativeGDI(ScreenPtr pScreen)
  */
 
 static Bool
-winCloseScreenNativeGDI(int nIndex, ScreenPtr pScreen)
+winCloseScreenNativeGDI(ScreenPtr pScreen)
 {
     winScreenPriv(pScreen);
     winScreenInfo *pScreenInfo = pScreenPriv->pScreenInfo;
@@ -344,8 +344,7 @@ winCreateDIBNativeGDI(int iWidth, int iHeight, int iDepth,
     }
 
     /* Allocate bitmap info header */
-    pbmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER)
-                                        + 256 * sizeof(RGBQUAD));
+    pbmih = malloc(sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD));
     if (pbmih == NULL) {
         ErrorF("winCreateDIBNativeGDI - malloc () failed\n");
         return FALSE;

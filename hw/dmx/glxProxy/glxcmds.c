@@ -123,6 +123,28 @@ GetBackEndDisplay(__GLXclientState * cl, int s)
     return cl->be_displays[s];
 }
 
+/**
+ * Convert the render type bits from fbconfig into context render type.
+ */
+static int
+renderTypeBitsToRenderTypeEnum(int fbRenderType)
+{
+    if (fbRenderType & GLX_RGBA_BIT)
+        return GLX_RGBA_TYPE;
+
+    if (fbRenderType & GLX_COLOR_INDEX_BIT)
+        return  GLX_COLOR_INDEX_TYPE;
+
+    if (fbRenderType & GLX_RGBA_FLOAT_BIT_ARB)
+        return GLX_RGBA_FLOAT_TYPE_ARB;
+
+    if (fbRenderType & GLX_RGBA_UNSIGNED_FLOAT_BIT_EXT)
+        return GLX_RGBA_UNSIGNED_FLOAT_TYPE_EXT;
+
+    /* There's no recognized renderType in the config */
+    return GLX_RGBA_TYPE;
+}
+
 /*
 ** Create a GL context with the given properties.
 */
@@ -173,7 +195,7 @@ CreateContext(__GLXclientState * cl,
         shareglxc = NULL;
     }
     else {
-        dixLookupResourceByType((pointer *) &shareglxc, shareList,
+        dixLookupResourceByType((void **) &shareglxc, shareList,
                                 __glXContextRes, NullClient, DixUnknownAccess);
         if (!shareglxc) {
             client->errorValue = shareList;
@@ -308,12 +330,14 @@ CreateContext(__GLXclientState * cl,
         /* send the create context request to the back-end server */
         dpy = GetBackEndDisplay(cl, screen);
         if (glxc->pFBConfig) {
-            /*Since for a certain visual both RGB and COLOR INDEX
-             *can be on then the only parmeter to choose the renderType
-             * should be the class of the colormap since all 4 first 
-             * classes does not support RGB mode only COLOR INDEX ,
-             * and so TrueColor and DirectColor does not support COLOR INDEX*/
-            int renderType = glxc->pFBConfig->renderType;
+            /* For a specific visual, multiple render types (i.e., both RGB
+             * and COLOR INDEX) can be accessible. The only parameter to
+             * choose the renderType should be the class of the colormap,
+             * since the first classes do not support RGB mode (only COLOR
+             * INDEX), and TrueColor and DirectColor do not support COLOR
+             * INDEX.
+             */
+            int renderType = GLX_RGBA_TYPE;
 
             if (pVisual) {
                 switch (pVisual->class) {
@@ -329,7 +353,11 @@ CreateContext(__GLXclientState * cl,
                     renderType = GLX_RGBA_TYPE;
                     break;
                 }
+            } else {
+                renderType =
+                    renderTypeBitsToRenderTypeEnum(glxc->pFBConfig->renderType);
             }
+
             if (__GLX_IS_VERSION_SUPPORTED(1, 3)) {
                 LockDisplay(dpy);
                 GetReq(GLXCreateNewContext, be_new_req);
@@ -397,7 +425,7 @@ CreateContext(__GLXclientState * cl,
     /*
      ** Register this context as a resource.
      */
-    if (!AddResource(gcId, __glXContextRes, (pointer) glxc)) {
+    if (!AddResource(gcId, __glXContextRes, (void *) glxc)) {
         free(glxc->real_ids);
         free(glxc->real_vids);
         free(glxc);
@@ -454,19 +482,18 @@ __glXQueryMaxSwapBarriersSGIX(__GLXclientState * cl, GLbyte * pc)
     ClientPtr client = cl->client;
     xGLXQueryMaxSwapBarriersSGIXReq *req =
         (xGLXQueryMaxSwapBarriersSGIXReq *) pc;
-    xGLXQueryMaxSwapBarriersSGIXReply reply;
-
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.length = 0;
-    reply.max = QueryMaxSwapBarriersSGIX(req->screen);
+    xGLXQueryMaxSwapBarriersSGIXReply reply = {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = 0,
+        .max = QueryMaxSwapBarriersSGIX(req->screen)
+    };
 
     if (client->swapped) {
         __glXSwapQueryMaxSwapBarriersSGIXReply(client, &reply);
     }
     else {
-        WriteToClient(client, sz_xGLXQueryMaxSwapBarriersSGIXReply,
-                      (char *) &reply);
+        WriteToClient(client, sz_xGLXQueryMaxSwapBarriersSGIXReply, &reply);
     }
 
     return Success;
@@ -484,14 +511,14 @@ __glXBindSwapBarrierSGIX(__GLXclientState * cl, GLbyte * pc)
 
     rc = dixLookupDrawable(&pDraw, req->drawable, client, 0, DixGetAttrAccess);
     if (rc != Success) {
-        dixLookupResourceByType((pointer *) &pGlxPixmap, req->drawable,
+        dixLookupResourceByType((void **) &pGlxPixmap, req->drawable,
                                 __glXPixmapRes, NullClient, DixUnknownAccess);
         if (pGlxPixmap)
             pDraw = pGlxPixmap->pDraw;
     }
 
     if (!pDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-        dixLookupResourceByType((pointer *) &pGlxWindow, req->drawable,
+        dixLookupResourceByType((void **) &pGlxWindow, req->drawable,
                                 __glXWindowRes, NullClient, DixUnknownAccess);
         if (pGlxWindow)
             pDraw = pGlxWindow->pDraw;
@@ -517,14 +544,14 @@ __glXJoinSwapGroupSGIX(__GLXclientState * cl, GLbyte * pc)
 
     rc = dixLookupDrawable(&pDraw, req->drawable, client, 0, DixManageAccess);
     if (rc != Success) {
-        dixLookupResourceByType((pointer *) &pGlxPixmap, req->drawable,
+        dixLookupResourceByType((void **) &pGlxPixmap, req->drawable,
                                 __glXPixmapRes, NullClient, DixUnknownAccess);
         if (pGlxPixmap)
             pDraw = pGlxPixmap->pDraw;
     }
 
     if (!pDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-        dixLookupResourceByType((pointer *) &pGlxWindow, req->drawable,
+        dixLookupResourceByType((void **) &pGlxWindow, req->drawable,
                                 __glXWindowRes, NullClient, DixUnknownAccess);
         if (pGlxWindow)
             pDraw = pGlxWindow->pDraw;
@@ -539,7 +566,7 @@ __glXJoinSwapGroupSGIX(__GLXclientState * cl, GLbyte * pc)
         rc = dixLookupDrawable(&pMember, req->member, client, 0,
                                DixGetAttrAccess);
         if (rc != Success) {
-            dixLookupResourceByType((pointer *) &pGlxPixmap, req->member,
+            dixLookupResourceByType((void **) &pGlxPixmap, req->member,
                                     __glXPixmapRes, NullClient,
                                     DixUnknownAccess);
             if (pGlxPixmap)
@@ -547,7 +574,7 @@ __glXJoinSwapGroupSGIX(__GLXclientState * cl, GLbyte * pc)
         }
 
         if (!pMember && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-            dixLookupResourceByType((pointer *) &pGlxWindow, req->member,
+            dixLookupResourceByType((void **) &pGlxWindow, req->member,
                                     __glXWindowRes, NullClient,
                                     DixUnknownAccess);
             if (pGlxWindow)
@@ -578,7 +605,7 @@ __glXDestroyContext(__GLXclientState * cl, GLbyte * pc)
     int to_screen = 0;
     int s;
 
-    dixLookupResourceByType((pointer *) &glxc, gcId, __glXContextRes,
+    dixLookupResourceByType((void **) &glxc, gcId, __glXContextRes,
                             NullClient, DixUnknownAccess);
     if (glxc) {
         /*
@@ -794,7 +821,11 @@ MakeCurrent(__GLXclientState * cl,
     ClientPtr client = cl->client;
     DrawablePtr pDraw = NULL;
     DrawablePtr pReadDraw = NULL;
-    xGLXMakeCurrentReadSGIReply new_reply;
+    xGLXMakeCurrentReadSGIReply new_reply = {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = 0
+    };
     xGLXMakeCurrentReq *be_req;
     xGLXMakeCurrentReply be_reply;
     xGLXMakeContextCurrentReq *be_new_req;
@@ -849,7 +880,7 @@ MakeCurrent(__GLXclientState * cl,
      ** Lookup new context.  It must not be current for someone else.
      */
     if (contextId != None) {
-        dixLookupResourceByType((pointer *) &glxc, contextId, __glXContextRes,
+        dixLookupResourceByType((void **) &glxc, contextId, __glXContextRes,
                                 NullClient, DixUnknownAccess);
         if (!glxc) {
             client->errorValue = contextId;
@@ -904,7 +935,7 @@ MakeCurrent(__GLXclientState * cl,
         }
 
         if (!pDraw) {
-            dixLookupResourceByType((pointer *) &pGlxPixmap, drawId,
+            dixLookupResourceByType((void **) &pGlxPixmap, drawId,
                                     __glXPixmapRes, NullClient,
                                     DixUnknownAccess);
             if (pGlxPixmap) {
@@ -929,7 +960,7 @@ MakeCurrent(__GLXclientState * cl,
         }
 
         if (!pDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-            dixLookupResourceByType((pointer *) &pGlxWindow, drawId,
+            dixLookupResourceByType((void **) &pGlxWindow, drawId,
                                     __glXWindowRes, NullClient,
                                     DixUnknownAccess);
             if (pGlxWindow) {
@@ -952,7 +983,7 @@ MakeCurrent(__GLXclientState * cl,
         }
 
         if (!pDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-            dixLookupResourceByType((pointer *) &pGlxPbuffer, drawId,
+            dixLookupResourceByType((void **) &pGlxPbuffer, drawId,
                                     __glXPbufferRes, NullClient,
                                     DixUnknownAccess);
             if (pGlxPbuffer) {
@@ -1019,7 +1050,7 @@ MakeCurrent(__GLXclientState * cl,
         }
 
         if (!pReadDraw) {
-            dixLookupResourceByType((pointer *) &pReadGlxPixmap, readId,
+            dixLookupResourceByType((void **) &pReadGlxPixmap, readId,
                                     __glXPixmapRes, NullClient,
                                     DixUnknownAccess);
             if (pReadGlxPixmap) {
@@ -1041,7 +1072,7 @@ MakeCurrent(__GLXclientState * cl,
         }
 
         if (!pReadDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-            dixLookupResourceByType((pointer *) &pGlxReadWindow, readId,
+            dixLookupResourceByType((void **) &pGlxReadWindow, readId,
                                     __glXWindowRes, NullClient,
                                     DixUnknownAccess);
             if (pGlxReadWindow) {
@@ -1063,7 +1094,7 @@ MakeCurrent(__GLXclientState * cl,
         }
 
         if (!pReadDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-            dixLookupResourceByType((pointer *) &pGlxReadPbuffer, readId,
+            dixLookupResourceByType((void **) &pGlxReadPbuffer, readId,
                                     __glXPbufferRes, NullClient,
                                     DixUnknownAccess);
             if (pGlxReadPbuffer) {
@@ -1198,9 +1229,6 @@ MakeCurrent(__GLXclientState * cl,
     else {
         new_reply.contextTag = 0;
     }
-    new_reply.length = 0;
-    new_reply.type = X_Reply;
-    new_reply.sequenceNumber = client->sequence;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
@@ -1208,14 +1236,14 @@ MakeCurrent(__GLXclientState * cl,
         to_screen = screenInfo.numScreens - 1;
 
         if (pDraw && new_reply.writeType != GLX_PBUFFER_TYPE) {
-            dixLookupResourceByClass((pointer *) &pXinDraw,
+            dixLookupResourceByClass((void **) &pXinDraw,
                                      pDraw->id, XRC_DRAWABLE,
                                      client, DixReadAccess);
         }
 
         if (pReadDraw && pReadDraw != pDraw &&
             new_reply.readType != GLX_PBUFFER_TYPE) {
-            dixLookupResourceByClass((pointer *) &pXinReadDraw,
+            dixLookupResourceByClass((void **) &pXinReadDraw,
                                      pReadDraw->id, XRC_DRAWABLE,
                                      client, DixReadAccess);
         }
@@ -1276,7 +1304,7 @@ MakeCurrent(__GLXclientState * cl,
             be_req->context =
                 (unsigned int) (glxc ? glxc->real_ids[s - from_screen] : 0);
             be_req->oldContextTag = GetCurrentBackEndTag(cl, tag, s);
-            if (!_XReply(dpy, (xReply *) & be_reply, 0, False)) {
+            if (!_XReply(dpy, (xReply *) &be_reply, 0, False)) {
 
                 /* The make current failed */
                 UnlockDisplay(dpy);
@@ -1331,7 +1359,7 @@ MakeCurrent(__GLXclientState * cl,
                 be_new_req->context =
                     (unsigned int) (glxc ? glxc->real_ids[s - from_screen] : 0);
                 be_new_req->oldContextTag = GetCurrentBackEndTag(cl, tag, s);
-                if (!_XReply(dpy, (xReply *) & be_new_reply, 0, False)) {
+                if (!_XReply(dpy, (xReply *) &be_new_reply, 0, False)) {
 
                     /* The make current failed */
                     UnlockDisplay(dpy);
@@ -1362,7 +1390,7 @@ MakeCurrent(__GLXclientState * cl,
                 ext_req->context =
                     (unsigned int) (glxc ? glxc->real_ids[s - from_screen] : 0);
                 ext_req->oldContextTag = GetCurrentBackEndTag(cl, tag, s);
-                if (!_XReply(dpy, (xReply *) & ext_reply, 0, False)) {
+                if (!_XReply(dpy, (xReply *) &ext_reply, 0, False)) {
 
                     /* The make current failed */
                     UnlockDisplay(dpy);
@@ -1388,8 +1416,7 @@ MakeCurrent(__GLXclientState * cl,
         __glXSwapMakeCurrentReply(client, &new_reply);
     }
     else {
-        WriteToClient(client, sz_xGLXMakeContextCurrentReply,
-                      (char *) &new_reply);
+        WriteToClient(client, sz_xGLXMakeContextCurrentReply, &new_reply);
     }
 
     return Success;
@@ -1433,23 +1460,25 @@ __glXIsDirect(__GLXclientState * cl, GLbyte * pc)
     /*
      ** Find the GL context.
      */
-    dixLookupResourceByType((pointer *) &glxc, req->context, __glXContextRes,
+    dixLookupResourceByType((void **) &glxc, req->context, __glXContextRes,
                             NullClient, DixUnknownAccess);
     if (!glxc) {
         client->errorValue = req->context;
         return __glXBadContext;
     }
 
-    reply.isDirect = 0;
-    reply.length = 0;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
+    reply = (xGLXIsDirectReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = 0,
+        .isDirect = 0
+    };
 
     if (client->swapped) {
         __glXSwapIsDirectReply(client, &reply);
     }
     else {
-        WriteToClient(client, sz_xGLXIsDirectReply, (char *) &reply);
+        WriteToClient(client, sz_xGLXIsDirectReply, &reply);
     }
 
     return Success;
@@ -1461,24 +1490,25 @@ __glXQueryVersion(__GLXclientState * cl, GLbyte * pc)
     ClientPtr client = cl->client;
 
 /*    xGLXQueryVersionReq *req = (xGLXQueryVersionReq *) pc; */
-    xGLXQueryVersionReply reply;
 
+    xGLXQueryVersionReply reply = {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = 0,
     /*
      ** Server should take into consideration the version numbers sent by the
      ** client if it wants to work with older clients; however, in this
      ** implementation the server just returns its version number.
      */
-    reply.majorVersion = __glXVersionMajor;
-    reply.minorVersion = __glXVersionMinor;
-    reply.length = 0;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
+        .majorVersion = __glXVersionMajor,
+        .minorVersion = __glXVersionMinor
+    };
 
     if (client->swapped) {
         __glXSwapQueryVersionReply(client, &reply);
     }
     else {
-        WriteToClient(client, sz_xGLXQueryVersionReply, (char *) &reply);
+        WriteToClient(client, sz_xGLXQueryVersionReply, &reply);
     }
     return Success;
 }
@@ -1589,13 +1619,13 @@ __glXCopyContext(__GLXclientState * cl, GLbyte * pc)
     /*
      ** Check that each context exists.
      */
-    dixLookupResourceByType((pointer *) &src, source, __glXContextRes,
+    dixLookupResourceByType((void **) &src, source, __glXContextRes,
                             NullClient, DixUnknownAccess);
     if (!src) {
         client->errorValue = source;
         return __glXBadContext;
     }
-    dixLookupResourceByType((pointer *) &dst, dest, __glXContextRes,
+    dixLookupResourceByType((void **) &dst, dest, __glXContextRes,
                             NullClient, DixUnknownAccess);
     if (!dst) {
         client->errorValue = dest;
@@ -1682,14 +1712,16 @@ __glXGetVisualConfigs(__GLXclientState * cl, GLbyte * pc)
     }
     pGlxScreen = &__glXActiveScreens[screen];
 
-    reply.numVisuals = pGlxScreen->numGLXVisuals;
-    reply.numProps = __GLX_TOTAL_CONFIG;
-    reply.length = (pGlxScreen->numGLXVisuals * __GLX_SIZE_CARD32 *
-                    __GLX_TOTAL_CONFIG) >> 2;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
+    reply = (xGLXGetVisualConfigsReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .numVisuals = pGlxScreen->numGLXVisuals,
+        .numProps = __GLX_TOTAL_CONFIG,
+        .length = (pGlxScreen->numGLXVisuals * __GLX_SIZE_CARD32 *
+                    __GLX_TOTAL_CONFIG) >> 2
+    };
 
-    WriteToClient(client, sz_xGLXGetVisualConfigsReply, (char *) &reply);
+    WriteToClient(client, sz_xGLXGetVisualConfigsReply, &reply);
 
     for (i = 0; i < pGlxScreen->numVisuals; i++) {
         pGlxVisual = &pGlxScreen->pGlxVisual[i];
@@ -1743,8 +1775,7 @@ __glXGetVisualConfigs(__GLXclientState * cl, GLbyte * pc)
         buf[p++] = GLX_VISUAL_SELECT_GROUP_SGIX;
         buf[p++] = pGlxVisual->visualSelectGroup;
 
-        WriteToClient(client, __GLX_SIZE_CARD32 * __GLX_TOTAL_CONFIG,
-                      (char *) buf);
+        WriteToClient(client, __GLX_SIZE_CARD32 * __GLX_TOTAL_CONFIG, buf);
     }
     return Success;
 }
@@ -1894,7 +1925,7 @@ CreateGLXPixmap(__GLXclientState * cl,
         from_screen = 0;
         to_screen = screenInfo.numScreens - 1;
 
-        dixLookupResourceByClass((pointer *) &pXinDraw,
+        dixLookupResourceByClass((void **) &pXinDraw,
                                  pDraw->id, XRC_DRAWABLE,
                                  client, DixReadAccess);
     }
@@ -1978,6 +2009,7 @@ CreateGLXPixmap(__GLXclientState * cl,
         }
         else {
             client->errorValue = (visual ? visual : fbconfigId);
+            free(pGlxPixmap->be_xids);
             free(pGlxPixmap);
             return BadValue;
         }
@@ -1986,6 +2018,7 @@ CreateGLXPixmap(__GLXclientState * cl,
     }
 
     if (!(AddResource(glxpixmapId, __glXPixmapRes, pGlxPixmap))) {
+        free(pGlxPixmap->be_xids);
         free(pGlxPixmap);
         return BadAlloc;
     }
@@ -2024,7 +2057,7 @@ __glXDestroyGLXPixmap(__GLXclientState * cl, GLbyte * pc)
     /*
      ** Check if it's a valid GLX pixmap.
      */
-    dixLookupResourceByType((pointer *) &pGlxPixmap, glxpixmap,
+    dixLookupResourceByType((void **) &pGlxPixmap, glxpixmap,
                             __glXPixmapRes, NullClient, DixUnknownAccess);
     if (!pGlxPixmap) {
         client->errorValue = glxpixmap;
@@ -2110,7 +2143,7 @@ __glXDoSwapBuffers(__GLXclientState * cl, XID drawId, GLXContextTag tag)
     }
 
     if (!pDraw) {
-        dixLookupResourceByType((pointer *) &pGlxPixmap, drawId,
+        dixLookupResourceByType((void **) &pGlxPixmap, drawId,
                                 __glXPixmapRes, NullClient, DixUnknownAccess);
         if (pGlxPixmap) {
             /*
@@ -2122,7 +2155,7 @@ __glXDoSwapBuffers(__GLXclientState * cl, XID drawId, GLXContextTag tag)
     }
 
     if (!pDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-        dixLookupResourceByType((pointer *) &pGlxWindow, drawId,
+        dixLookupResourceByType((void **) &pGlxWindow, drawId,
                                 __glXWindowRes, NullClient, DixUnknownAccess);
         if (pGlxWindow) {
             /*
@@ -2152,7 +2185,7 @@ __glXDoSwapBuffers(__GLXclientState * cl, XID drawId, GLXContextTag tag)
     if (!noPanoramiXExtension) {
         from_screen = 0;
         to_screen = screenInfo.numScreens - 1;
-        dixLookupResourceByClass((pointer *) &pXinDraw,
+        dixLookupResourceByClass((void **) &pXinDraw,
                                  pDraw->id, XRC_DRAWABLE,
                                  client, DixReadAccess);
     }
@@ -2174,7 +2207,7 @@ __glXDoSwapBuffers(__GLXclientState * cl, XID drawId, GLXContextTag tag)
             finishReq->glxCode = X_GLsop_Finish;
             finishReq->contextTag =
                 (tag ? GetCurrentBackEndTag(cl, tag, s) : 0);
-            (void) _XReply(dpy, (xReply *) & reply, 0, False);
+            (void) _XReply(dpy, (xReply *) &reply, 0, False);
             UnlockDisplay(dpy);
             SyncHandle();
         }
@@ -2260,7 +2293,7 @@ __glXSwapBuffers(__GLXclientState * cl, GLbyte * pc)
     }
 
     if (!pDraw) {
-        dixLookupResourceByType((pointer *) &pGlxPixmap, drawId,
+        dixLookupResourceByType((void **) &pGlxPixmap, drawId,
                                 __glXPixmapRes, NullClient, DixUnknownAccess);
         if (pGlxPixmap) {
             /*
@@ -2271,7 +2304,7 @@ __glXSwapBuffers(__GLXclientState * cl, GLbyte * pc)
     }
 
     if (!pDraw && __GLX_IS_VERSION_SUPPORTED(1, 3)) {
-        dixLookupResourceByType((pointer *) &pGlxWindow, drawId,
+        dixLookupResourceByType((void **) &pGlxWindow, drawId,
                                 __glXWindowRes, NullClient, DixUnknownAccess);
         if (pGlxWindow) {
             /*
@@ -2579,7 +2612,6 @@ __glXQueryExtensionsString(__GLXclientState * cl, GLbyte * pc)
     xGLXQueryExtensionsStringReply be_reply;
     DMXScreenInfo *dmxScreen;
     Display *dpy;
-    int slop;
 #endif
 
     screen = req->screen;
@@ -2602,19 +2634,16 @@ __glXQueryExtensionsString(__GLXclientState * cl, GLbyte * pc)
     be_req->reqType = dmxScreen->glxMajorOpcode;
     be_req->glxCode = X_GLXQueryServerString;
     be_req->screen = DefaultScreen(dpy);
-    _XReply(dpy, (xReply *) & be_reply, 0, False);
+    _XReply(dpy, (xReply *) &be_reply, 0, False);
     len = (int) be_reply.length;
     numbytes = (int) be_reply.n;
-    slop = numbytes * __GLX_SIZE_INT8 & 3;
     be_buf = (char *) malloc(numbytes);
     if (!be_buf) {
         /* Throw data on the floor */
-        _XEatData(dpy, len);
+        _XEatDataWords(dpy, len);
     }
     else {
-        _XRead(dpy, (char *) be_buf, numbytes);
-        if (slop)
-            _XEatData(dpy, 4 - slop);
+        _XReadPad(dpy, (char *) be_buf, numbytes);
     }
     UnlockDisplay(dpy);
     SyncHandle();
@@ -2628,18 +2657,19 @@ __glXQueryExtensionsString(__GLXclientState * cl, GLbyte * pc)
 #endif
 
     length = len;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.length = len;
-    reply.n = numbytes;
+    reply = (xGLXQueryExtensionsStringReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = len,
+        .n = numbytes
+    };
 
     if (client->swapped) {
         glxSwapQueryExtensionsStringReply(client, &reply, be_buf);
     }
     else {
-        WriteToClient(client, sz_xGLXQueryExtensionsStringReply,
-                      (char *) &reply);
-        WriteToClient(client, (int) (length << 2), (char *) be_buf);
+        WriteToClient(client, sz_xGLXQueryExtensionsStringReply, &reply);
+        WriteToClient(client, (int) (length << 2), be_buf);
     }
 
     return Success;
@@ -2662,7 +2692,6 @@ __glXQueryServerString(__GLXclientState * cl, GLbyte * pc)
     xGLXQueryServerStringReply be_reply;
     DMXScreenInfo *dmxScreen;
     Display *dpy;
-    int slop;
 #endif
 
     name = req->name;
@@ -2686,19 +2715,16 @@ __glXQueryServerString(__GLXclientState * cl, GLbyte * pc)
     be_req->glxCode = X_GLXQueryServerString;
     be_req->screen = DefaultScreen(dpy);
     be_req->name = name;
-    _XReply(dpy, (xReply *) & be_reply, 0, False);
+    _XReply(dpy, (xReply *) &be_reply, 0, False);
     len = (int) be_reply.length;
     numbytes = (int) be_reply.n;
-    slop = numbytes * __GLX_SIZE_INT8 & 3;
     be_buf = (char *) malloc(numbytes);
     if (!be_buf) {
         /* Throw data on the floor */
-        _XEatData(dpy, len);
+        _XEatDataWords(dpy, len);
     }
     else {
-        _XRead(dpy, (char *) be_buf, numbytes);
-        if (slop)
-            _XEatData(dpy, 4 - slop);
+        _XReadPad(dpy, (char *) be_buf, numbytes);
     }
     UnlockDisplay(dpy);
     SyncHandle();
@@ -2710,16 +2736,18 @@ __glXQueryServerString(__GLXclientState * cl, GLbyte * pc)
 #endif
 
     length = len;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.length = length;
-    reply.n = numbytes;
+    reply = (xGLXQueryServerStringReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = length,
+        .n = numbytes
+    };
 
     if (client->swapped) {
         glxSwapQueryServerStringReply(client, &reply, be_buf);
     }
     else {
-        WriteToClient(client, sz_xGLXQueryServerStringReply, (char *) &reply);
+        WriteToClient(client, sz_xGLXQueryServerStringReply, &reply);
         WriteToClient(client, (int) (length << 2), be_buf);
     }
 
@@ -2736,8 +2764,6 @@ __glXClientInfo(__GLXclientState * cl, GLbyte * pc)
     int to_screen = 0;
     int s;
 
-    cl->GLClientmajorVersion = req->major;
-    cl->GLClientminorVersion = req->minor;
     free(cl->GLClientextensions);
     buf = (const char *) (req + 1);
     cl->GLClientextensions = strdup(buf);
@@ -2793,12 +2819,12 @@ __glXUseXFont(__GLXclientState * cl, GLbyte * pc)
      ** Font can actually be either the ID of a font or the ID of a GC
      ** containing a font.
      */
-    dixLookupResourceByType((pointer *) &pFont, req->font, RT_FONT,
+    dixLookupResourceByType((void **) &pFont, req->font, RT_FONT,
                             NullClient, DixUnknownAccess);
     if (!pFont) {
         GC *pGC;
 
-        dixLookupResourceByType((pointer *) &pGC, req->font,
+        dixLookupResourceByType((void **) &pGC, req->font,
                                 RT_GC, NullClient, DixUnknownAccess);
         if (!pGC) {
             client->errorValue = req->font;
@@ -2867,11 +2893,13 @@ __glXGetFBConfigs(__GLXclientState * cl, GLbyte * pc)
     pGlxScreen = &__glXActiveScreens[screen];
     numFBConfigs = __glXNumFBConfigs;
 
-    reply.numFBConfigs = numFBConfigs;
-    reply.numAttribs = numAttribs;
-    reply.length = (numFBConfigs * 2 * numAttribs * __GLX_SIZE_CARD32) >> 2;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
+    reply = (xGLXGetFBConfigsReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = (numFBConfigs * 2 * numAttribs * __GLX_SIZE_CARD32) >> 2,
+        .numFBConfigs = numFBConfigs,
+        .numAttribs = numAttribs
+    };
 
     if (client->swapped) {
         __GLX_DECLARE_SWAP_VARIABLES;
@@ -2880,7 +2908,7 @@ __glXGetFBConfigs(__GLXclientState * cl, GLbyte * pc)
         __GLX_SWAP_INT(&reply.numFBConfigs);
         __GLX_SWAP_INT(&reply.numAttribs);
     }
-    WriteToClient(client, sz_xGLXGetFBConfigsReply, (char *) &reply);
+    WriteToClient(client, sz_xGLXGetFBConfigsReply, &reply);
 
     for (i = 0; i < numFBConfigs; i++) {
         int associatedVisualId = 0;
@@ -3021,7 +3049,7 @@ __glXGetFBConfigs(__GLXclientState * cl, GLbyte * pc)
             __GLX_DECLARE_SWAP_ARRAY_VARIABLES;
             __GLX_SWAP_INT_ARRAY((int *) buf, 2 * numAttribs);
         }
-        WriteToClient(client, 2 * numAttribs * __GLX_SIZE_CARD32, (char *) buf);
+        WriteToClient(client, 2 * numAttribs * __GLX_SIZE_CARD32, buf);
     }
     return Success;
 }
@@ -3037,7 +3065,7 @@ __glXGetFBConfigsSGIX(__GLXclientState * cl, GLbyte * pc)
     new_req.length = req->length;
     new_req.screen = req->screen;
 
-    return (__glXGetFBConfigs(cl, (GLbyte *) & new_req));
+    return (__glXGetFBConfigs(cl, (GLbyte *) &new_req));
 }
 
 int
@@ -3056,7 +3084,7 @@ __glXCreateWindow(__GLXclientState * cl, GLbyte * pc)
     VisualPtr pVisual;
     VisualID visId;
     int i, rc;
-    pointer val;
+    void *val;
 
     /*
      ** Check if windowId is valid 
@@ -3158,7 +3186,7 @@ __glXDestroyWindow(__GLXclientState * cl, GLbyte * pc)
     ClientPtr client = cl->client;
     xGLXDestroyWindowReq *req = (xGLXDestroyWindowReq *) pc;
     XID glxwindow = req->glxwindow;
-    pointer val;
+    void *val;
 
     /*
      ** Check if it's a valid GLX window.
@@ -3190,7 +3218,7 @@ __glXQueryContext(__GLXclientState * cl, GLbyte * pc)
     int nReplyBytes;
 
     req = (xGLXQueryContextReq *) pc;
-    dixLookupResourceByType((pointer *) &ctx, req->context, __glXContextRes,
+    dixLookupResourceByType((void **) &ctx, req->context, __glXContextRes,
                             NullClient, DixUnknownAccess);
     if (!ctx) {
         client->errorValue = req->context;
@@ -3199,10 +3227,12 @@ __glXQueryContext(__GLXclientState * cl, GLbyte * pc)
 
     nProps = 3;
 
-    reply.length = nProps << 1;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.n = nProps;
+    reply = (xGLXQueryContextReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = nProps << 1,
+        .n = nProps
+    };
 
     nReplyBytes = reply.length << 2;
     sendBuf = (int *) malloc(nReplyBytes);
@@ -3210,7 +3240,7 @@ __glXQueryContext(__GLXclientState * cl, GLbyte * pc)
     *pSendBuf++ = GLX_FBCONFIG_ID;
     *pSendBuf++ = (int) (ctx->pFBConfig->id);
     *pSendBuf++ = GLX_RENDER_TYPE;
-    *pSendBuf++ = (int) (ctx->pFBConfig->renderType);
+    *pSendBuf++ = renderTypeBitsToRenderTypeEnum(ctx->pFBConfig->renderType);
     *pSendBuf++ = GLX_SCREEN;
     *pSendBuf++ = (int) (ctx->pScreen->myNum);
 
@@ -3218,8 +3248,8 @@ __glXQueryContext(__GLXclientState * cl, GLbyte * pc)
         __glXSwapQueryContextReply(client, &reply, sendBuf);
     }
     else {
-        WriteToClient(client, sz_xGLXQueryContextReply, (char *) &reply);
-        WriteToClient(client, nReplyBytes, (char *) sendBuf);
+        WriteToClient(client, sz_xGLXQueryContextReply, &reply);
+        WriteToClient(client, nReplyBytes, sendBuf);
     }
     free((char *) sendBuf);
 
@@ -3238,7 +3268,7 @@ __glXQueryContextInfoEXT(__GLXclientState * cl, GLbyte * pc)
     int nReplyBytes;
 
     req = (xGLXQueryContextInfoEXTReq *) pc;
-    dixLookupResourceByType((pointer *) &ctx,
+    dixLookupResourceByType((void **) &ctx,
                             req->context, __glXContextRes,
                             client, DixReadAccess);
 
@@ -3249,10 +3279,12 @@ __glXQueryContextInfoEXT(__GLXclientState * cl, GLbyte * pc)
 
     nProps = 4;
 
-    reply.length = nProps << 1;
-    reply.type = X_Reply;
-    reply.sequenceNumber = client->sequence;
-    reply.n = nProps;
+    reply = (xGLXQueryContextInfoEXTReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = nProps << 1,
+        .n = nProps
+    };
 
     nReplyBytes = reply.length << 2;
     sendBuf = (int *) malloc(nReplyBytes);
@@ -3270,8 +3302,8 @@ __glXQueryContextInfoEXT(__GLXclientState * cl, GLbyte * pc)
         __glXSwapQueryContextInfoEXTReply(client, &reply, sendBuf);
     }
     else {
-        WriteToClient(client, sz_xGLXQueryContextInfoEXTReply, (char *) &reply);
-        WriteToClient(client, nReplyBytes, (char *) sendBuf);
+        WriteToClient(client, sz_xGLXQueryContextInfoEXTReply, &reply);
+        WriteToClient(client, nReplyBytes, sendBuf);
     }
     free((char *) sendBuf);
 
@@ -3409,7 +3441,7 @@ __glXDestroyPbuffer(__GLXclientState * cl, GLbyte * pc)
     /*
      ** Check if it's a valid Pbuffer
      */
-    dixLookupResourceByType((pointer *) &pGlxPbuffer, pbuffer,
+    dixLookupResourceByType((void **) &pGlxPbuffer, pbuffer,
                             __glXPbufferRes, NullClient, DixUnknownAccess);
     if (!pGlxPbuffer) {
         client->errorValue = pbuffer;
@@ -3484,7 +3516,7 @@ __glXGetDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         if (!pDraw) {
             __GLXpixmap *pGlxPixmap;
 
-            dixLookupResourceByType((pointer *) &pGlxPixmap,
+            dixLookupResourceByType((void **) &pGlxPixmap,
                                     drawId, __glXPixmapRes,
                                     NullClient, DixUnknownAccess);
             if (pGlxPixmap) {
@@ -3497,7 +3529,7 @@ __glXGetDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         if (!pDraw) {
             __glXWindow *pGlxWindow;
 
-            dixLookupResourceByType((pointer *) &pGlxWindow,
+            dixLookupResourceByType((void **) &pGlxWindow,
                                     drawId, __glXWindowRes,
                                     NullClient, DixUnknownAccess);
             if (pGlxWindow) {
@@ -3510,7 +3542,7 @@ __glXGetDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         if (!pDraw) {
             __glXPbuffer *pGlxPbuffer;
 
-            dixLookupResourceByType((pointer *) &pGlxPbuffer,
+            dixLookupResourceByType((void **) &pGlxPbuffer,
                                     drawId, __glXPbufferRes,
                                     NullClient, DixUnknownAccess);
             if (pGlxPbuffer) {
@@ -3537,7 +3569,7 @@ __glXGetDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
 
 #ifdef PANORAMIX
         if (!noPanoramiXExtension) {
-            if (Success != dixLookupResourceByClass((pointer *) &pXinDraw,
+            if (Success != dixLookupResourceByClass((void **) &pXinDraw,
                                                     pDraw->id, XRC_DRAWABLE,
                                                     client, DixReadAccess)) {
                 client->errorValue = drawId;
@@ -3579,7 +3611,7 @@ __glXGetDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
     be_req->glxCode = X_GLXGetDrawableAttributes;
     be_req->drawable = be_drawable;
     be_req->length = req->length;
-    if (!_XReply(dpy, (xReply *) & reply, 0, False)) {
+    if (!_XReply(dpy, (xReply *) &reply, 0, False)) {
         UnlockDisplay(dpy);
         SyncHandle();
         return (BE_TO_CLIENT_ERROR(dmxLastErrorEvent.error_code));
@@ -3606,9 +3638,8 @@ __glXGetDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         __glXSwapGetDrawableAttributesReply(client, &reply, (int *) attribs);
     }
     else {
-        WriteToClient(client, sz_xGLXGetDrawableAttributesReply,
-                      (char *) &reply);
-        WriteToClient(client, attribs_size, (char *) attribs);
+        WriteToClient(client, sz_xGLXGetDrawableAttributesReply, &reply);
+        WriteToClient(client, attribs_size, attribs);
     }
 
     free(attribs);
@@ -3647,7 +3678,7 @@ __glXChangeDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         if (!pDraw) {
             __GLXpixmap *pGlxPixmap;
 
-            dixLookupResourceByType((pointer *) &pGlxPixmap,
+            dixLookupResourceByType((void **) &pGlxPixmap,
                                     drawId, __glXPixmapRes,
                                     NullClient, DixUnknownAccess);
             if (pGlxPixmap) {
@@ -3660,7 +3691,7 @@ __glXChangeDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         if (!pDraw) {
             __glXWindow *pGlxWindow;
 
-            dixLookupResourceByType((pointer *) &pGlxWindow,
+            dixLookupResourceByType((void **) &pGlxWindow,
                                     drawId, __glXWindowRes,
                                     NullClient, DixUnknownAccess);
             if (pGlxWindow) {
@@ -3673,7 +3704,7 @@ __glXChangeDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         if (!pDraw) {
             __glXPbuffer *pGlxPbuffer;
 
-            dixLookupResourceByType((pointer *) &pGlxPbuffer,
+            dixLookupResourceByType((void **) &pGlxPbuffer,
                                     drawId, __glXPbufferRes,
                                     NullClient, DixUnknownAccess);
             if (pGlxPbuffer) {
@@ -3702,7 +3733,7 @@ __glXChangeDrawableAttributes(__GLXclientState * cl, GLbyte * pc)
         if (!noPanoramiXExtension) {
             PanoramiXRes *pXinDraw;
 
-            if (Success != dixLookupResourceByClass((pointer *) &pXinDraw,
+            if (Success != dixLookupResourceByClass((void **) &pXinDraw,
                                                     pDraw->id, XRC_DRAWABLE,
                                                     client, DixReadAccess)) {
                 client->errorValue = drawId;

@@ -81,7 +81,7 @@ static void UnloadModuleOrDriver(ModuleDescPtr mod);
 static char *LoaderGetCanonicalName(const char *, PatternPtr);
 static void RemoveChild(ModuleDescPtr);
 static ModuleDescPtr doLoadModule(const char *, const char *, const char **,
-                                  const char **, pointer,
+                                  const char **, void *,
                                   const XF86ModReqInfo *, int *, int *);
 
 const ModuleVersions LoaderVersionInfo = {
@@ -212,9 +212,15 @@ static const char *stdSubdirs[] = {
  * to port this DDX to, say, Darwin, we'll need to fix this.
  */
 static PatternRec stdPatterns[] = {
+#ifdef __CYGWIN__
+    {"^cyg(.*)\\.dll$",},
+    {"(.*)_drv\\.dll$",},
+    {"(.*)\\.dll$",},
+#else
     {"^lib(.*)\\.so$",},
     {"(.*)_drv\\.so$",},
     {"(.*)\\.so$",},
+#endif
     {NULL,}
 };
 
@@ -408,21 +414,33 @@ FindModuleInSubdir(const char *dirpath, const char *module)
             continue;
         }
 
+#ifdef __CYGWIN__
+        snprintf(tmpBuf, PATH_MAX, "cyg%s.dll", module);
+#else
         snprintf(tmpBuf, PATH_MAX, "lib%s.so", module);
+#endif
         if (strcmp(direntry->d_name, tmpBuf) == 0) {
             if (asprintf(&ret, "%s%s", dirpath, tmpBuf) == -1)
                 ret = NULL;
             break;
         }
 
+#ifdef __CYGWIN__
+        snprintf(tmpBuf, PATH_MAX, "%s_drv.dll", module);
+#else
         snprintf(tmpBuf, PATH_MAX, "%s_drv.so", module);
+#endif
         if (strcmp(direntry->d_name, tmpBuf) == 0) {
             if (asprintf(&ret, "%s%s", dirpath, tmpBuf) == -1)
                 ret = NULL;
             break;
         }
 
+#ifdef __CYGWIN__
+        snprintf(tmpBuf, PATH_MAX, "%s.dll", module);
+#else
         snprintf(tmpBuf, PATH_MAX, "%s.so", module);
+#endif
         if (strcmp(direntry->d_name, tmpBuf) == 0) {
             if (asprintf(&ret, "%s%s", dirpath, tmpBuf) == -1)
                 ret = NULL;
@@ -464,7 +482,7 @@ FindModule(const char *module, const char *dirname, const char **subdirlist,
     return name;
 }
 
-char **
+const char **
 LoaderListDirs(const char **subdirlist, const char **patternlist)
 {
     char buf[PATH_MAX + 1];
@@ -472,7 +490,7 @@ LoaderListDirs(const char **subdirlist, const char **patternlist)
     char **elem;
     const char **subdirs;
     const char **s;
-    PatternPtr patterns;
+    PatternPtr patterns = NULL;
     PatternPtr p;
     DIR *d;
     struct dirent *dp;
@@ -553,7 +571,7 @@ LoaderListDirs(const char **subdirlist, const char **patternlist)
     FreePatterns(patterns);
     FreeSubdirs(subdirs);
     FreePathList(pathlist);
-    return ret;
+    return (const char **) ret;
 }
 
 void
@@ -743,10 +761,10 @@ AddSibling(ModuleDescPtr head, ModuleDescPtr new)
     return new;
 }
 
-pointer
-LoadSubModule(pointer _parent, const char *module,
+void *
+LoadSubModule(void *_parent, const char *module,
               const char **subdirlist, const char **patternlist,
-              pointer options, const XF86ModReqInfo * modreq,
+              void *options, const XF86ModReqInfo * modreq,
               int *errmaj, int *errmin)
 {
     ModuleDescPtr submod;
@@ -815,12 +833,23 @@ static const char *compiled_in_modules[] = {
     "ddc",
     "i2c",
     "ramdac",
+    "dbe",
+    "record",
+    "extmod",
+    "dri",
+    "dri2",
+#if DRI3
+    "dri3",
+#endif
+#if PRESENT
+    "present",
+#endif
     NULL
 };
 
 static ModuleDescPtr
 doLoadModule(const char *module, const char *path, const char **subdirlist,
-             const char **patternlist, pointer options,
+             const char **patternlist, void *options,
              const XF86ModReqInfo * modreq, int *errmaj, int *errmin)
 {
     XF86ModuleData *initdata = NULL;
@@ -974,10 +1003,6 @@ doLoadModule(const char *module, const char *path, const char **subdirlist,
         ret->VersionInfo = vers;
     }
     else {
-        /* No initdata is OK for external modules */
-        if (options == EXTERN_MODULE)
-            goto LoadModule_exit;
-
         /* no initdata, fail the load */
         xf86Msg(X_ERROR, "LoadModule: Module %s does not have a %s "
                 "data object.\n", module, p);
@@ -1052,7 +1077,7 @@ doLoadModule(const char *module, const char *path, const char **subdirlist,
  */
 ModuleDescPtr
 LoadModule(const char *module, const char *path, const char **subdirlist,
-           const char **patternlist, pointer options,
+           const char **patternlist, void *options,
            const XF86ModReqInfo * modreq, int *errmaj, int *errmin)
 {
     return doLoadModule(module, path, subdirlist, patternlist, options,
@@ -1060,7 +1085,7 @@ LoadModule(const char *module, const char *path, const char **subdirlist,
 }
 
 void
-UnloadModule(pointer mod)
+UnloadModule(void *mod)
 {
     UnloadModuleOrDriver((ModuleDescPtr) mod);
 }
@@ -1075,9 +1100,10 @@ UnloadModuleOrDriver(ModuleDescPtr mod)
         return;
 
     if (mod->parent)
-        xf86MsgVerb(X_INFO, 3, "UnloadSubModule: \"%s\"\n", mod->name);
+        LogMessageVerbSigSafe(X_INFO, 3, "UnloadSubModule: \"%s\"\n",
+                              mod->name);
     else
-        xf86MsgVerb(X_INFO, 3, "UnloadModule: \"%s\"\n", mod->name);
+        LogMessageVerbSigSafe(X_INFO, 3, "UnloadModule: \"%s\"\n", mod->name);
 
     if (mod->TearDownData != ModuleDuplicated) {
         if ((mod->TearDownProc) && (mod->TearDownData))
@@ -1095,7 +1121,7 @@ UnloadModuleOrDriver(ModuleDescPtr mod)
 }
 
 void
-UnloadSubModule(pointer _mod)
+UnloadSubModule(void *_mod)
 {
     ModuleDescPtr mod = (ModuleDescPtr) _mod;
 

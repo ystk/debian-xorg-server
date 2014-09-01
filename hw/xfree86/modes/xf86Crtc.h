@@ -25,9 +25,6 @@
 
 #include <edid.h>
 #include "randrstr.h"
-#if XF86_MODES_RENAME
-#include "xf86Rename.h"
-#endif
 #include "xf86Modes.h"
 #include "xf86Cursor.h"
 #include "xf86i2c.h"
@@ -191,12 +188,16 @@ typedef struct _xf86CrtcFuncs {
      */
     void
      (*load_cursor_image) (xf86CrtcPtr crtc, CARD8 *image);
+    Bool
+     (*load_cursor_image_check) (xf86CrtcPtr crtc, CARD8 *image);
 
     /**
      * Load ARGB image
      */
     void
      (*load_cursor_argb) (xf86CrtcPtr crtc, CARD32 *image);
+    Bool
+     (*load_cursor_argb_check) (xf86CrtcPtr crtc, CARD32 *image);
 
     /**
      * Clean up driver-specific bits of the crtc
@@ -218,9 +219,14 @@ typedef struct _xf86CrtcFuncs {
     void
      (*set_origin) (xf86CrtcPtr crtc, int x, int y);
 
+    /**
+     */
+    Bool
+    (*set_scanout_pixmap)(xf86CrtcPtr crtc, PixmapPtr pixmap);
+
 } xf86CrtcFuncsRec, *xf86CrtcFuncsPtr;
 
-#define XF86_CRTC_VERSION 4
+#define XF86_CRTC_VERSION 5
 
 struct _xf86Crtc {
     /**
@@ -371,6 +377,10 @@ struct _xf86Crtc {
      * Added in ABI version 4
      */
     Bool driverIsPerformingTransform;
+
+    /* Added in ABI version 5
+     */
+    PixmapPtr current_scanout;
 };
 
 typedef struct _xf86OutputFuncs {
@@ -607,6 +617,29 @@ struct _xf86Output {
     INT16 initialBorder[4];
 };
 
+typedef struct _xf86ProviderFuncs {
+    /**
+     * Called to allow the provider a chance to create properties after the
+     * RandR objects have been created.
+     */
+    void
+    (*create_resources) (ScrnInfoPtr scrn);
+
+    /**
+     * Callback when an provider's property has changed.
+     */
+    Bool
+    (*set_property) (ScrnInfoPtr scrn,
+                     Atom property, RRPropertyValuePtr value);
+
+    /**
+     * Callback to get an updated property value
+     */
+    Bool
+    (*get_property) (ScrnInfoPtr provider, Atom property);
+
+} xf86ProviderFuncsRec, *xf86ProviderFuncsPtr;
+
 typedef struct _xf86CrtcConfigFuncs {
     /**
      * Requests that the driver resize the screen.
@@ -681,6 +714,13 @@ typedef struct _xf86CrtcConfig {
     /* callback when crtc configuration changes */
     xf86_crtc_notify_proc_ptr xf86_crtc_notify;
 
+    char *name;
+    const xf86ProviderFuncsRec *provider_funcs;
+#ifdef RANDR_12_INTERFACE
+    RRProviderPtr randr_provider;
+#else
+    void *randr_provider;
+#endif
 } xf86CrtcConfigRec, *xf86CrtcConfigPtr;
 
 extern _X_EXPORT int xf86CrtcConfigPrivateIndex;
@@ -974,5 +1014,12 @@ extern _X_EXPORT void
 
 extern _X_EXPORT Bool
  xf86_crtc_supports_gamma(ScrnInfoPtr pScrn);
+
+extern _X_EXPORT void
+xf86ProviderSetup(ScrnInfoPtr scrn,
+                  const xf86ProviderFuncsRec * funcs, const char *name);
+
+extern _X_EXPORT void
+xf86DetachAllCrtc(ScrnInfoPtr scrn);
 
 #endif                          /* _XF86CRTC_H_ */

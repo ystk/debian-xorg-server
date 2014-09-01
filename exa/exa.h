@@ -39,7 +39,7 @@
 #include "fb.h"
 
 #define EXA_VERSION_MAJOR   2
-#define EXA_VERSION_MINOR   5
+#define EXA_VERSION_MINOR   6
 #define EXA_VERSION_RELEASE 0
 
 typedef struct _ExaOffscreenArea ExaOffscreenArea;
@@ -58,7 +58,7 @@ struct _ExaOffscreenArea {
     int offset;                 /* aligned offset */
     int size;                   /* total allocation size */
     unsigned last_use;
-    pointer privData;
+    void *privData;
 
     ExaOffscreenSaveProc save;
 
@@ -685,7 +685,7 @@ typedef struct _ExaDriver {
      */
     Bool (*ModifyPixmapHeader) (PixmapPtr pPixmap, int width, int height,
                                 int depth, int bitsPerPixel, int devKind,
-                                pointer pPixData);
+                                void *pPixData);
 
     /* hooks for drivers with tiling support:
      * driver MUST fill out new_fb_pitch with valid pitch of pixmap
@@ -694,6 +694,10 @@ typedef struct _ExaDriver {
                             int depth, int usage_hint, int bitsPerPixel,
                             int *new_fb_pitch);
     /** @} */
+    Bool (*SharePixmapBacking)(PixmapPtr pPixmap, ScreenPtr slave, void **handle_p);
+
+    Bool (*SetSharedPixmapBacking)(PixmapPtr pPixmap, void *handle);
+
 } ExaDriverRec, *ExaDriverPtr;
 
 /** @name EXA driver flags
@@ -780,7 +784,7 @@ extern _X_EXPORT ExaOffscreenArea *exaOffscreenAlloc(ScreenPtr pScreen,
                                                      int size, int align,
                                                      Bool locked,
                                                      ExaOffscreenSaveProc save,
-                                                     pointer privData);
+                                                     void *privData);
 
 extern _X_EXPORT ExaOffscreenArea *exaOffscreenFree(ScreenPtr pScreen,
                                                     ExaOffscreenArea * area);
@@ -789,7 +793,7 @@ extern _X_EXPORT void
  ExaOffscreenMarkUsed(PixmapPtr pPixmap);
 
 extern _X_EXPORT void
- exaEnableDisableFBAccess(int index, Bool enable);
+ exaEnableDisableFBAccess(ScreenPtr pScreen, Bool enable);
 
 extern _X_EXPORT Bool
  exaDrawableIsOffscreen(DrawablePtr pDrawable);

@@ -42,6 +42,7 @@
 #define _XF86MODULE_H
 
 #include "misc.h"
+#include "extension.h"
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
@@ -54,9 +55,6 @@ typedef enum {
 } LoaderResolveOptions;
 
 #define DEFAULT_LIST ((char *)-1)
-
-/* This indicates a special module that doesn't have the usual entry point */
-#define EXTERN_MODULE ((pointer)-1)
 
 /* Built-in ABI classes.  These definitions must not be changed. */
 #define ABI_CLASS_NONE		NULL
@@ -82,9 +80,9 @@ typedef enum {
  * mask is 0xFFFF0000.
  */
 #define ABI_ANSIC_VERSION	SET_ABI_VERSION(0, 4)
-#define ABI_VIDEODRV_VERSION	SET_ABI_VERSION(12, 1)
-#define ABI_XINPUT_VERSION	SET_ABI_VERSION(16, 0)
-#define ABI_EXTENSION_VERSION	SET_ABI_VERSION(6, 0)
+#define ABI_VIDEODRV_VERSION	SET_ABI_VERSION(18, 0)
+#define ABI_XINPUT_VERSION	SET_ABI_VERSION(21, 0)
+#define ABI_EXTENSION_VERSION	SET_ABI_VERSION(8, 0)
 #define ABI_FONT_VERSION	SET_ABI_VERSION(0, 6)
 
 #define MODINFOSTRING1	0xef23fdc5
@@ -171,39 +169,26 @@ typedef struct {
 
 #define INITARGS void
 
-typedef void (*InitExtension) (INITARGS);
-
-typedef struct {
-    InitExtension initFunc;
-    const char *name;
-    Bool *disablePtr;
-    InitExtension setupFunc;
-    const char **initDependencies;
-} ExtensionModule;
-
-extern _X_EXPORT ExtensionModule *ExtensionModuleList;
-
 /* Prototypes for Loader functions that are exported to modules */
-extern _X_EXPORT pointer LoadSubModule(pointer, const char *, const char **,
-                                       const char **, pointer,
+extern _X_EXPORT void *LoadSubModule(void *, const char *, const char **,
+                                       const char **, void *,
                                        const XF86ModReqInfo *, int *, int *);
-extern _X_EXPORT void UnloadSubModule(pointer);
-extern _X_EXPORT void UnloadModule(pointer);
-extern _X_EXPORT pointer LoaderSymbol(const char *);
-extern _X_EXPORT char **LoaderListDirs(const char **, const char **);
+extern _X_EXPORT void UnloadSubModule(void *);
+extern _X_EXPORT void UnloadModule(void *);
+extern _X_EXPORT void *LoaderSymbol(const char *);
+extern _X_EXPORT const char **LoaderListDirs(const char **, const char **);
 extern _X_EXPORT void LoaderFreeDirList(char **);
 extern _X_EXPORT void LoaderErrorMsg(const char *, const char *, int, int);
-extern _X_EXPORT void LoadExtension(ExtensionModule *, Bool);
 extern _X_EXPORT void LoaderGetOS(const char **name, int *major, int *minor,
                                   int *teeny);
 extern _X_EXPORT Bool LoaderShouldIgnoreABI(void);
 extern _X_EXPORT int LoaderGetABIVersion(const char *abiclass);
 
-typedef pointer (*ModuleSetupProc) (pointer, pointer, int *, int *);
-typedef void (*ModuleTearDownProc) (pointer);
+typedef void *(*ModuleSetupProc) (void *, void *, int *, int *);
+typedef void (*ModuleTearDownProc) (void *);
 
-#define MODULESETUPPROTO(func) pointer func(pointer, pointer, int*, int*)
-#define MODULETEARDOWNPROTO(func) void func(pointer)
+#define MODULESETUPPROTO(func) void *func(void *, void *, int*, int*)
+#define MODULETEARDOWNPROTO(func) void func(void *)
 
 typedef struct {
     XF86ModuleVersionInfo *vers;

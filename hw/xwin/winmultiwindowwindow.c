@@ -53,7 +53,7 @@ static void
  winUpdateWindowsWindow(WindowPtr pWin);
 
 static void
- winFindWindow(pointer value, XID id, pointer cdata);
+ winFindWindow(void *value, XID id, void *cdata);
 
 static
     void
@@ -63,6 +63,11 @@ winInitMultiWindowClass(void)
     WNDCLASSEX wcx;
 
     if (atomXWinClass == 0) {
+        HICON hIcon, hIconSmall;
+
+        /* Load the default icons */
+        winSelectIcons(&hIcon, &hIconSmall);
+
         /* Setup our window class */
         wcx.cbSize = sizeof(WNDCLASSEX);
         wcx.style = CS_HREDRAW | CS_VREDRAW | (g_fNativeGl ? CS_OWNDC : 0);
@@ -70,12 +75,12 @@ winInitMultiWindowClass(void)
         wcx.cbClsExtra = 0;
         wcx.cbWndExtra = 0;
         wcx.hInstance = g_hInstance;
-        wcx.hIcon = g_hIconX;
+        wcx.hIcon = hIcon;
         wcx.hCursor = 0;
         wcx.hbrBackground = (HBRUSH) GetStockObject(WHITE_BRUSH);
         wcx.lpszMenuName = NULL;
         wcx.lpszClassName = WINDOW_CLASS_X;
-        wcx.hIconSm = g_hSmallIconX;
+        wcx.hIconSm = hIconSmall;
 
 #if CYGMULTIWINDOW_DEBUG
         ErrorF("winCreateWindowsWindow - Creating class: %s\n", WINDOW_CLASS_X);
@@ -479,11 +484,9 @@ winCreateWindowsWindow(WindowPtr pWin)
     HWND hFore = NULL;
 
     winWindowPriv(pWin);
-    HICON hIcon;
-    HICON hIconSmall;
     winPrivScreenPtr pScreenPriv = pWinPriv->pScreenPriv;
     WinXSizeHints hints;
-    WindowPtr pDaddy;
+    Window daddyId;
     DWORD dwStyle, dwExStyle;
     RECT rc;
 
@@ -513,10 +516,10 @@ winCreateWindowsWindow(WindowPtr pWin)
     winDebug("winCreateWindowsWindow - %dx%d @ %dx%d\n", iWidth, iHeight, iX,
              iY);
 
-    if (winMultiWindowGetTransientFor(pWin, &pDaddy)) {
-        if (pDaddy) {
+    if (winMultiWindowGetTransientFor(pWin, &daddyId)) {
+        if (daddyId) {
             hFore = GetForegroundWindow();
-            if (hFore && (pDaddy != (WindowPtr) GetProp(hFore, WIN_WID_PROP)))
+            if (hFore && (daddyId != (Window) (INT_PTR) GetProp(hFore, WIN_WID_PROP)))
                 hFore = NULL;
         }
     }
@@ -574,13 +577,6 @@ winCreateWindowsWindow(WindowPtr pWin)
     }
     pWinPriv->hWnd = hWnd;
 
-    /* Set application or .XWinrc defined Icons */
-    winSelectIcons(pWin, &hIcon, &hIconSmall);
-    if (hIcon)
-        SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM) hIcon);
-    if (hIconSmall)
-        SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) hIconSmall);
-
     /* Change style back to popup, already placed... */
     SetWindowLongPtr(hWnd, GWL_STYLE,
                      WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
@@ -597,7 +593,7 @@ winCreateWindowsWindow(WindowPtr pWin)
     /* Cause any .XWinrc menus to be added in main WNDPROC */
     PostMessage(hWnd, WM_INIT_SYS_MENU, 0, 0);
 
-    SetProp(hWnd, WIN_WID_PROP, (HANDLE) winGetWindowID(pWin));
+    SetProp(hWnd, WIN_WID_PROP, (HANDLE) (INT_PTR) winGetWindowID(pWin));
 
     /* Flag that this Windows window handles its own activation */
     SetProp(hWnd, WIN_NEEDMANAGE_PROP, (HANDLE) 0);
@@ -728,7 +724,7 @@ winGetWindowID(WindowPtr pWin)
  */
 
 static void
-winFindWindow(pointer value, XID id, pointer cdata)
+winFindWindow(void *value, XID id, void *cdata)
 {
     WindowIDPairPtr wi = (WindowIDPairPtr) cdata;
 
@@ -812,13 +808,12 @@ winMinimizeWindow(Window id)
     HWND hWnd;
     ScreenPtr pScreen = NULL;
     winPrivScreenPtr pScreenPriv = NULL;
-    winScreenInfo *pScreenInfo = NULL;
 
 #if CYGWINDOWING_DEBUG
     ErrorF("winMinimizeWindow\n");
 #endif
 
-    dixLookupResourceByType((pointer) &pWin, id, RT_WINDOW, NullClient,
+    dixLookupResourceByType((void *) &pWin, id, RT_WINDOW, NullClient,
                             DixUnknownAccess);
     if (!pWin) {
         ErrorF("%s: NULL pWin. Leaving\n", __FUNCTION__);
@@ -828,11 +823,9 @@ winMinimizeWindow(Window id)
     pScreen = pWin->drawable.pScreen;
     if (pScreen)
         pScreenPriv = winGetScreenPriv(pScreen);
-    if (pScreenPriv)
-        pScreenInfo = pScreenPriv->pScreenInfo;
 
 #ifdef XWIN_MULTIWINDOWEXTWM
-    if (pScreenPriv && pScreenInfo->fInternalWM) {
+    if (pScreenPriv && pScreenPriv->pScreenInfo->fInternalWM) {
         pRLWinPriv =
             (win32RootlessWindowPtr) RootlessFrameForWindow(pWin, FALSE);
         hWnd = pRLWinPriv->hWnd;

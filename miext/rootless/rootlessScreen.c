@@ -138,7 +138,7 @@ RootlessCreateScreenResources(ScreenPtr pScreen)
 }
 
 static Bool
-RootlessCloseScreen(int i, ScreenPtr pScreen)
+RootlessCloseScreen(ScreenPtr pScreen)
 {
     RootlessScreenRec *s;
 
@@ -154,7 +154,7 @@ RootlessCloseScreen(int i, ScreenPtr pScreen)
     }
 
     free(s);
-    return pScreen->CloseScreen(i, pScreen);
+    return pScreen->CloseScreen(pScreen);
 }
 
 static void
@@ -603,7 +603,7 @@ RootlessQueueRedisplay(ScreenPtr pScreen)
  *  on select().
  */
 static void
-RootlessBlockHandler(pointer pbdata, OSTimePtr pTimeout, pointer pReadmask)
+RootlessBlockHandler(void *pbdata, OSTimePtr pTimeout, void *pReadmask)
 {
     ScreenPtr pScreen = pbdata;
     RootlessScreenRec *screenRec = SCREENREC(pScreen);
@@ -616,7 +616,7 @@ RootlessBlockHandler(pointer pbdata, OSTimePtr pTimeout, pointer pReadmask)
 }
 
 static void
-RootlessWakeupHandler(pointer data, int i, pointer LastSelectMask)
+RootlessWakeupHandler(void *data, int i, void *LastSelectMask)
 {
     // nothing here
 }
@@ -728,7 +728,7 @@ RootlessInit(ScreenPtr pScreen, RootlessFrameProcsPtr procs)
 
     if (!RegisterBlockAndWakeupHandlers(RootlessBlockHandler,
                                         RootlessWakeupHandler,
-                                        (pointer) pScreen)) {
+                                        (void *) pScreen)) {
         return FALSE;
     }
 

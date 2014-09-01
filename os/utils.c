@@ -71,6 +71,7 @@ __stdcall unsigned long GetTickCount(void);
 #if !defined(WIN32) || !defined(__MINGW32__)
 #include <sys/time.h>
 #include <sys/resource.h>
+# define SMART_SCHEDULE_POSSIBLE
 #endif
 #include "misc.h"
 #include <X11/X.h>
@@ -138,7 +139,6 @@ Bool noDPMSExtension = FALSE;
 #endif
 #ifdef GLXEXT
 Bool noGlxExtension = FALSE;
-Bool noGlxVisualInit = FALSE;
 #endif
 #ifdef SCREENSAVER
 Bool noScreenSaverExtension = FALSE;
@@ -169,9 +169,7 @@ Bool noXFree86DRIExtension = FALSE;
 #ifdef XF86VIDMODE
 Bool noXFree86VidModeExtension = FALSE;
 #endif
-#ifdef XFIXES
 Bool noXFixesExtension = FALSE;
-#endif
 #ifdef PANORAMIX
 /* Xinerama is disabled by default unless enabled via +xinerama */
 Bool noPanoramiXExtension = TRUE;
@@ -196,6 +194,8 @@ Bool noGEExtension = FALSE;
 
 Bool CoreDump;
 
+Bool enableIndirectGLX = TRUE;
+
 #ifdef PANORAMIX
 Bool PanoramiXExtensionDisabledHack = FALSE;
 #endif
@@ -204,6 +204,8 @@ int auditTrailLevel = 1;
 
 char *SeatId = NULL;
 
+sig_atomic_t inSignalContext = FALSE;
+
 #if defined(SVR4) || defined(__linux__) || defined(CSRG_BASED)
 #define HAS_SAVED_IDS_AND_SETEUID
 #endif
@@ -211,6 +213,9 @@ char *SeatId = NULL;
 OsSigHandlerPtr
 OsSignal(int sig, OsSigHandlerPtr handler)
 {
+#if defined(WIN32) && !defined(__CYGWIN__)
+    return signal(sig, handler);
+#else
     struct sigaction act, oact;
 
     sigemptyset(&act.sa_mask);
@@ -221,6 +226,7 @@ OsSignal(int sig, OsSigHandlerPtr handler)
     if (sigaction(sig, &act, &oact))
         perror("sigaction");
     return oact.sa_handler;
+#endif
 }
 
 /*
@@ -234,6 +240,19 @@ OsSignal(int sig, OsSigHandlerPtr handler)
 #define LOCK_PREFIX "/.X"
 #define LOCK_SUFFIX "-lock"
 
+#if !defined(WIN32) || defined(__CYGWIN__)
+#define LOCK_SERVER
+#endif
+
+#ifndef LOCK_SERVER
+void
+LockServer(void)
+{}
+
+void
+UnlockServer(void)
+{}
+#else /* LOCK_SERVER */
 static Bool StillLocking = FALSE;
 static char LockFile[PATH_MAX];
 static Bool nolock = FALSE;
@@ -253,7 +272,7 @@ LockServer(void)
     int len;
     char port[20];
 
-    if (nolock)
+    if (nolock || NoListenAll)
         return;
     /*
      * Path names
@@ -296,7 +315,8 @@ LockServer(void)
     if (lfd < 0)
         FatalError("Could not create lock file in %s\n", tmp);
     snprintf(pid_str, sizeof(pid_str), "%10ld\n", (long) getpid());
-    (void) write(lfd, pid_str, 11);
+    if (write(lfd, pid_str, 11) != 11)
+        FatalError("Could not write pid to lock file in %s\n", tmp);
     (void) fchmod(lfd, 0444);
     (void) close(lfd);
 
@@ -373,7 +393,7 @@ LockServer(void)
 void
 UnlockServer(void)
 {
-    if (nolock)
+    if (nolock || NoListenAll)
         return;
 
     if (!StillLocking) {
@@ -381,6 +401,7 @@ UnlockServer(void)
         (void) unlink(LockFile);
     }
 }
+#endif /* LOCK_SERVER */
 
 /* Force connections to close on SIGHUP from init */
 
@@ -412,6 +433,11 @@ GetTimeInMillis(void)
 {
     return GetTickCount();
 }
+CARD64
+GetTimeInMicros(void)
+{
+    return (CARD64) GetTickCount() * 1000;
+}
 #else
 CARD32
 GetTimeInMillis(void)
@@ -442,10 +468,32 @@ GetTimeInMillis(void)
     X_GETTIMEOFDAY(&tv);
     return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 }
+
+CARD64
+GetTimeInMicros(void)
+{
+    struct timeval tv;
+#ifdef MONOTONIC_CLOCK
+    struct timespec tp;
+    static clockid_t clockid;
+
+    if (!clockid) {
+        if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0)
+            clockid = CLOCK_MONOTONIC;
+        else
+            clockid = ~0L;
+    }
+    if (clockid != ~0L && clock_gettime(clockid, &tp) == 0)
+        return (CARD64) tp.tv_sec * (CARD64)1000000 + tp.tv_nsec / 1000;
+#endif
+
+    X_GETTIMEOFDAY(&tv);
+    return (CARD64) tv.tv_sec * (CARD64)1000000000 + (CARD64) tv.tv_usec * 1000;
+}
 #endif
 
 void
-AdjustWaitForDelay(pointer waitTime, unsigned long newdelay)
+AdjustWaitForDelay(void *waitTime, unsigned long newdelay)
 {
     static struct timeval delay_val;
     struct timeval **wt = (struct timeval **) waitTime;
@@ -481,6 +529,7 @@ UseMsg(void)
     ErrorF("-cc int                default color visual class\n");
     ErrorF("-nocursor              disable the cursor\n");
     ErrorF("-core                  generate core dump on fatal error\n");
+    ErrorF("-displayfd fd          file descriptor to write display number to when ready to connect\n");
     ErrorF("-dpi int               screen resolution in dots per inch\n");
 #ifdef DPMSExtension
     ErrorF("-dpms                  disables VESA DPMS monitor control\n");
@@ -492,6 +541,8 @@ UseMsg(void)
     ErrorF("-fn string             default font name\n");
     ErrorF("-fp string             default font path\n");
     ErrorF("-help                  prints message with these options\n");
+    ErrorF("+iglx                  Allow creating indirect GLX contexts (default)\n");
+    ErrorF("-iglx                  Prohibit creating indirect GLX contexts\n");
     ErrorF("-I                     ignore all remaining arguments\n");
 #ifdef RLIMIT_DATA
     ErrorF("-ld int                limit data space to N Kb\n");
@@ -502,7 +553,9 @@ UseMsg(void)
 #ifdef RLIMIT_STACK
     ErrorF("-ls int                limit stack space to N Kb\n");
 #endif
+#ifdef LOCK_SERVER
     ErrorF("-nolock                disable the locking mechanism\n");
+#endif
     ErrorF("-nolisten string       don't listen on protocol\n");
     ErrorF("-noreset               don't reset after last client exists\n");
     ErrorF("-background [none]     create root window with no background\n");
@@ -553,6 +606,10 @@ UseMsg(void)
 static int
 VerifyDisplayName(const char *d)
 {
+    int i;
+    int period_found = FALSE;
+    int after_period = 0;
+
     if (d == (char *) 0)
         return 0;               /*  null  */
     if (*d == '\0')
@@ -563,6 +620,29 @@ VerifyDisplayName(const char *d)
         return 0;               /*  must not equal "." or ".."  */
     if (strchr(d, '/') != (char *) 0)
         return 0;               /*  very important!!!  */
+
+    /* Since we run atoi() on the display later, only allow
+       for digits, or exception of :0.0 and similar (two decimal points max)
+       */
+    for (i = 0; i < strlen(d); i++) {
+        if (!isdigit(d[i])) {
+            if (d[i] != '.' || period_found)
+                return 0;
+            period_found = TRUE;
+        } else if (period_found)
+            after_period++;
+
+        if (after_period > 2)
+            return 0;
+    }
+
+    /* don't allow for :0. */
+    if (period_found && after_period == 0)
+        return 0;
+
+    if (atol(d) > INT_MAX)
+        return 0;
+
     return 1;
 }
 
@@ -592,6 +672,7 @@ ProcessCommandLine(int argc, char *argv[])
         else if (argv[i][0] == ':') {
             /* initialize display */
             display = argv[i];
+            explicit_display = TRUE;
             display++;
             if (!VerifyDisplayName(display)) {
                 ErrorF("Bad display name: %s\n", display);
@@ -659,6 +740,16 @@ ProcessCommandLine(int argc, char *argv[])
             else
                 UseMsg();
         }
+        else if (strcmp(argv[i], "-displayfd") == 0) {
+            if (++i < argc) {
+                displayfd = atoi(argv[i]);
+#ifdef LOCK_SERVER
+                nolock = TRUE;
+#endif
+            }
+            else
+                UseMsg();
+        }
 #ifdef DPMSExtension
         else if (strcmp(argv[i], "dpms") == 0)
             /* ignored for compatibility */ ;
@@ -698,6 +789,10 @@ ProcessCommandLine(int argc, char *argv[])
             UseMsg();
             exit(0);
         }
+        else if (strcmp(argv[i], "+iglx") == 0)
+            enableIndirectGLX = TRUE;
+        else if (strcmp(argv[i], "-iglx") == 0)
+            enableIndirectGLX = FALSE;
         else if ((skip = XkbProcessArguments(argc, argv, i)) != 0) {
             if (skip > 0)
                 i += skip - 1;
@@ -734,6 +829,7 @@ ProcessCommandLine(int argc, char *argv[])
                 UseMsg();
         }
 #endif
+#ifdef LOCK_SERVER
         else if (strcmp(argv[i], "-nolock") == 0) {
 #if !defined(WIN32) && !defined(__CYGWIN__)
             if (getuid() != 0)
@@ -743,6 +839,7 @@ ProcessCommandLine(int argc, char *argv[])
 #endif
                 nolock = TRUE;
         }
+#endif
         else if (strcmp(argv[i], "-nolisten") == 0) {
             if (++i < argc) {
                 if (_XSERVTransNoListen(argv[i]))
@@ -864,6 +961,7 @@ ProcessCommandLine(int argc, char *argv[])
             i = skip - 1;
         }
 #endif
+#ifdef SMART_SCHEDULE_POSSIBLE
         else if (strcmp(argv[i], "-dumbSched") == 0) {
             SmartScheduleDisable = TRUE;
         }
@@ -882,6 +980,7 @@ ProcessCommandLine(int argc, char *argv[])
             else
                 UseMsg();
         }
+#endif
         else if (strcmp(argv[i], "-render") == 0) {
             if (++i < argc) {
                 int policy = PictureParseCmapPolicy(argv[i]);
@@ -924,7 +1023,7 @@ ProcessCommandLine(int argc, char *argv[])
 /* Implement a simple-minded font authorization scheme.  The authorization
    name is "hp-hostname-1", the contents are simply the host name. */
 int
-set_font_authorizations(char **authorizations, int *authlen, pointer client)
+set_font_authorizations(char **authorizations, int *authlen, void *client)
 {
 #define AUTHORIZATION_NAME "hp-hostname-1"
 #if defined(TCPCONN) || defined(STREAMSCONN)
@@ -1093,6 +1192,7 @@ XNFstrdup(const char *s)
 void
 SmartScheduleStopTimer(void)
 {
+#ifdef SMART_SCHEDULE_POSSIBLE
     struct itimerval timer;
 
     if (SmartScheduleDisable)
@@ -1102,11 +1202,13 @@ SmartScheduleStopTimer(void)
     timer.it_value.tv_sec = 0;
     timer.it_value.tv_usec = 0;
     (void) setitimer(ITIMER_REAL, &timer, 0);
+#endif
 }
 
 void
 SmartScheduleStartTimer(void)
 {
+#ifdef SMART_SCHEDULE_POSSIBLE
     struct itimerval timer;
 
     if (SmartScheduleDisable)
@@ -1116,6 +1218,7 @@ SmartScheduleStartTimer(void)
     timer.it_value.tv_sec = 0;
     timer.it_value.tv_usec = SmartScheduleInterval * 1000;
     setitimer(ITIMER_REAL, &timer, 0);
+#endif
 }
 
 static void
@@ -1127,6 +1230,7 @@ SmartScheduleTimer(int sig)
 void
 SmartScheduleInit(void)
 {
+#ifdef SMART_SCHEDULE_POSSIBLE
     struct sigaction act;
 
     if (SmartScheduleDisable)
@@ -1142,6 +1246,7 @@ SmartScheduleInit(void)
         perror("sigaction for smart scheduler");
         SmartScheduleDisable = TRUE;
     }
+#endif
 }
 
 #ifdef SIG_BLOCK
@@ -1156,14 +1261,14 @@ OsBlockSignals(void)
     if (BlockedSignalCount++ == 0) {
         sigset_t set;
 
+#ifdef SIGIO
+        OsBlockSIGIO();
+#endif
         sigemptyset(&set);
         sigaddset(&set, SIGALRM);
         sigaddset(&set, SIGVTALRM);
 #ifdef SIGWINCH
         sigaddset(&set, SIGWINCH);
-#endif
-#ifdef SIGIO
-        sigaddset(&set, SIGIO);
 #endif
         sigaddset(&set, SIGTSTP);
         sigaddset(&set, SIGTTIN);
@@ -1174,13 +1279,71 @@ OsBlockSignals(void)
 #endif
 }
 
+#ifdef SIG_BLOCK
+static sig_atomic_t sigio_blocked;
+static sigset_t PreviousSigIOMask;
+#endif
+
+/**
+ * returns zero if this call caused SIGIO to be blocked now, non-zero if it
+ * was already blocked by a previous call to this function.
+ */
+int
+OsBlockSIGIO(void)
+{
+#ifdef SIGIO
+#ifdef SIG_BLOCK
+    if (sigio_blocked++ == 0) {
+        sigset_t set;
+        int ret;
+
+        sigemptyset(&set);
+        sigaddset(&set, SIGIO);
+        sigprocmask(SIG_BLOCK, &set, &PreviousSigIOMask);
+        ret = sigismember(&PreviousSigIOMask, SIGIO);
+        return ret;
+    }
+#endif
+#endif
+    return 1;
+}
+
+void
+OsReleaseSIGIO(void)
+{
+#ifdef SIGIO
+#ifdef SIG_BLOCK
+    if (--sigio_blocked == 0) {
+        sigprocmask(SIG_SETMASK, &PreviousSigIOMask, 0);
+    } else if (sigio_blocked < 0) {
+        BUG_WARN(sigio_blocked < 0);
+        sigio_blocked = 0;
+    }
+#endif
+#endif
+}
+
 void
 OsReleaseSignals(void)
 {
 #ifdef SIG_BLOCK
     if (--BlockedSignalCount == 0) {
         sigprocmask(SIG_SETMASK, &PreviousSignalMask, 0);
+        OsReleaseSIGIO();
     }
+#endif
+}
+
+void
+OsResetSignals(void)
+{
+#ifdef SIG_BLOCK
+    while (BlockedSignalCount > 0)
+        OsReleaseSignals();
+#ifdef SIGIO
+    while (sigio_blocked > 0)
+        OsReleaseSIGIO();
+#endif
 #endif
 }
 
@@ -1259,7 +1422,7 @@ static struct pid {
 
 OsSigHandlerPtr old_alarm = NULL;       /* XXX horrible awful hack */
 
-pointer
+void *
 Popen(const char *command, const char *type)
 {
     struct pid *cur;
@@ -1347,7 +1510,7 @@ Popen(const char *command, const char *type)
 }
 
 /* fopen that drops privileges */
-pointer
+void *
 Fopen(const char *file, const char *type)
 {
     FILE *iop;
@@ -1442,7 +1605,7 @@ Fopen(const char *file, const char *type)
 }
 
 int
-Pclose(pointer iop)
+Pclose(void *iop)
 {
     struct pid *cur, *last;
     int pstat;
@@ -1479,7 +1642,7 @@ Pclose(pointer iop)
 }
 
 int
-Fclose(pointer iop)
+Fclose(void *iop)
 {
 #ifdef HAS_SAVED_IDS_AND_SETEUID
     return fclose(iop);
@@ -1489,6 +1652,79 @@ Fclose(pointer iop)
 }
 
 #endif                          /* !WIN32 */
+
+#ifdef WIN32
+
+#include <X11/Xwindows.h>
+
+const char *
+Win32TempDir()
+{
+    static char buffer[PATH_MAX];
+
+    if (GetTempPath(sizeof(buffer), buffer)) {
+        int len;
+
+        buffer[sizeof(buffer) - 1] = 0;
+        len = strlen(buffer);
+        if (len > 0)
+            if (buffer[len - 1] == '\\')
+                buffer[len - 1] = 0;
+        return buffer;
+    }
+    if (getenv("TEMP") != NULL)
+        return getenv("TEMP");
+    else if (getenv("TMP") != NULL)
+        return getenv("TMP");
+    else
+        return "/tmp";
+}
+
+int
+System(const char *cmdline)
+{
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    DWORD dwExitCode;
+    char *cmd = strdup(cmdline);
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+        LPVOID buffer;
+
+        if (!FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                           FORMAT_MESSAGE_FROM_SYSTEM |
+                           FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL,
+                           GetLastError(),
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                           (LPTSTR) &buffer, 0, NULL)) {
+            ErrorF("[xkb] Starting '%s' failed!\n", cmdline);
+        }
+        else {
+            ErrorF("[xkb] Starting '%s' failed: %s", cmdline, (char *) buffer);
+            LocalFree(buffer);
+        }
+
+        free(cmd);
+        return -1;
+    }
+    /* Wait until child process exits. */
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    GetExitCodeProcess(pi.hProcess, &dwExitCode);
+
+    /* Close process and thread handles. */
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    free(cmd);
+
+    return dwExitCode;
+}
+#endif
 
 /*
  * CheckUserParameters: check for long command line arguments and long
@@ -1781,4 +2017,118 @@ xstrtokenize(const char *str, const char *separators)
         free(list[n]);
     free(list);
     return NULL;
+}
+
+/* Format a signed number into a string in a signal safe manner. The string
+ * should be at least 21 characters in order to handle all int64_t values.
+ */
+void
+FormatInt64(int64_t num, char *string)
+{
+    if (num < 0) {
+        string[0] = '-';
+        num *= -1;
+        string++;
+    }
+    FormatUInt64(num, string);
+}
+
+/* Format a number into a string in a signal safe manner. The string should be
+ * at least 21 characters in order to handle all uint64_t values. */
+void
+FormatUInt64(uint64_t num, char *string)
+{
+    uint64_t divisor;
+    int len;
+    int i;
+
+    for (len = 1, divisor = 10;
+         len < 20 && num / divisor;
+         len++, divisor *= 10);
+
+    for (i = len, divisor = 1; i > 0; i--, divisor *= 10)
+        string[i - 1] = '0' + ((num / divisor) % 10);
+
+    string[len] = '\0';
+}
+
+/**
+ * Format a double number as %.2f.
+ */
+void
+FormatDouble(double dbl, char *string)
+{
+    int slen = 0;
+    uint64_t frac;
+
+    frac = (dbl > 0 ? dbl : -dbl) * 100.0 + 0.5;
+    frac %= 100;
+
+    /* write decimal part to string */
+    if (dbl < 0 && dbl > -1)
+        string[slen++] = '-';
+    FormatInt64((int64_t)dbl, &string[slen]);
+
+    while(string[slen] != '\0')
+        slen++;
+
+    /* append fractional part, but only if we have enough characters. We
+     * expect string to be 21 chars (incl trailing \0) */
+    if (slen <= 17) {
+        string[slen++] = '.';
+        if (frac < 10)
+            string[slen++] = '0';
+
+        FormatUInt64(frac, &string[slen]);
+    }
+}
+
+
+/* Format a number into a hexadecimal string in a signal safe manner. The string
+ * should be at least 17 characters in order to handle all uint64_t values. */
+void
+FormatUInt64Hex(uint64_t num, char *string)
+{
+    uint64_t divisor;
+    int len;
+    int i;
+
+    for (len = 1, divisor = 0x10;
+         len < 16 && num / divisor;
+         len++, divisor *= 0x10);
+
+    for (i = len, divisor = 1; i > 0; i--, divisor *= 0x10) {
+        int val = (num / divisor) % 0x10;
+
+        if (val < 10)
+            string[i - 1] = '0' + val;
+        else
+            string[i - 1] = 'a' + val - 10;
+    }
+
+    string[len] = '\0';
+}
+
+/* Move a file descriptor out of the way of our select mask; this
+ * is useful for file descriptors which will never appear in the
+ * select mask to avoid reducing the number of clients that can
+ * connect to the server
+ */
+int
+os_move_fd(int fd)
+{
+    int newfd;
+
+#ifdef F_DUPFD_CLOEXEC
+    newfd = fcntl(fd, F_DUPFD_CLOEXEC, MAXCLIENTS);
+#else
+    newfd = fcntl(fd, F_DUPFD, MAXCLIENTS);
+#endif
+    if (newfd < 0)
+        return fd;
+#ifndef F_DUPFD_CLOEXEC
+    fcntl(newfd, F_SETFD, FD_CLOEXEC);
+#endif
+    close(fd);
+    return newfd;
 }

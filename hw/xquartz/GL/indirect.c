@@ -48,8 +48,6 @@
 #include <glxserver.h>
 #include <glxutil.h>
 
-#include <glapi.h>
-
 #include "x-hash.h"
 
 #include "visualConfigs.h"
@@ -135,11 +133,19 @@ struct __GLXAquaDrawable {
 static __GLXcontext *
 __glXAquaScreenCreateContext(__GLXscreen *screen,
                              __GLXconfig *conf,
-                             __GLXcontext *baseShareContext)
+                             __GLXcontext *baseShareContext,
+                             unsigned num_attribs,
+                             const uint32_t *attribs,
+                             int *error)
 {
     __GLXAquaContext *context;
     __GLXAquaContext *shareContext = (__GLXAquaContext *)baseShareContext;
     CGLError gl_err;
+
+    /* Unused (for now?) */
+    (void)num_attribs;
+    (void)attribs;
+    (void)error;
 
     GLAQUA_DEBUG_MSG("glXAquaScreenCreateContext\n");
 
@@ -635,15 +641,20 @@ __glFloorLog2(GLuint val)
     "/System/Library/Frameworks/OpenGL.framework/OpenGL"
 #endif
 
+static void *opengl_framework_handle;
+
+static glx_func_ptr
+get_proc_address(const char *sym)
+{
+    return (glx_func_ptr) dlsym(opengl_framework_handle, sym);
+}
+
 static void
 setup_dispatch_table(void)
 {
-    static struct _glapi_table *disp = NULL;
-    static void *handle;
     const char *opengl_framework_path;
 
-    if (disp) {
-        _glapi_set_dispatch(disp);
+    if (opengl_framework_handle) {
         return;
     }
 
@@ -653,16 +664,13 @@ setup_dispatch_table(void)
     }
 
     (void)dlerror();             /*drain dlerror */
-    handle = dlopen(opengl_framework_path, RTLD_LOCAL);
+    opengl_framework_handle = dlopen(opengl_framework_path, RTLD_LOCAL);
 
-    if (!handle) {
+    if (!opengl_framework_handle) {
         ErrorF("unable to dlopen %s : %s, using RTLD_DEFAULT\n",
                opengl_framework_path, dlerror());
-        handle = RTLD_DEFAULT;
+        opengl_framework_handle = RTLD_DEFAULT;
     }
 
-    disp = _glapi_create_table_from_handle(handle, "gl");
-    assert(disp);
-
-    _glapi_set_dispatch(disp);
+    __glXsetGetProcAddress(get_proc_address);
 }

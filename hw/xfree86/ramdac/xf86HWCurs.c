@@ -21,6 +21,15 @@
 
 #include "servermd.h"
 
+static CARD32
+xf86ReverseBitOrder(CARD32 v)
+{
+    return (((0x01010101 & v) << 7) | ((0x02020202 & v) << 5) |
+            ((0x04040404 & v) << 3) | ((0x08080808 & v) << 1) |
+            ((0x10101010 & v) >> 1) | ((0x20202020 & v) >> 3) |
+            ((0x40404040 & v) >> 5) | ((0x80808080 & v) >> 7));
+}
+
 #if BITMAP_SCANLINE_PAD == 64
 
 #if 1
@@ -78,7 +87,7 @@ xf86InitHardwareCursor(ScreenPtr pScreen, xf86CursorInfoPtr infoPtr)
 
     /* These are required for now */
     if (!infoPtr->SetCursorPosition ||
-        !infoPtr->LoadCursorImage ||
+        !xf86DriverHasLoadCursorImage(infoPtr) ||
         !infoPtr->HideCursor ||
         !infoPtr->ShowCursor || !infoPtr->SetCursorColors)
         return FALSE;
@@ -105,12 +114,12 @@ xf86InitHardwareCursor(ScreenPtr pScreen, xf86CursorInfoPtr infoPtr)
         infoPtr->RealizeCursor = RealizeCursorInterleave0;
     }
 
-    infoPtr->pScrn = xf86Screens[pScreen->myNum];
+    infoPtr->pScrn = xf86ScreenToScrn(pScreen);
 
     return TRUE;
 }
 
-void
+Bool
 xf86SetCursor(ScreenPtr pScreen, CursorPtr pCurs, int x, int y)
 {
     xf86CursorScreenPtr ScreenPriv =
@@ -121,7 +130,7 @@ xf86SetCursor(ScreenPtr pScreen, CursorPtr pCurs, int x, int y)
 
     if (pCurs == NullCursor) {
         (*infoPtr->HideCursor) (infoPtr->pScrn);
-        return;
+        return TRUE;
     }
 
     bits =
@@ -131,7 +140,7 @@ xf86SetCursor(ScreenPtr pScreen, CursorPtr pCurs, int x, int y)
     y -= infoPtr->pScrn->frameY0 + ScreenPriv->HotY;
 
 #ifdef ARGB_CURSOR
-    if (!pCurs->bits->argb || !infoPtr->LoadCursorARGB)
+    if (!pCurs->bits->argb || !xf86DriverHasLoadCursorARGB(infoPtr))
 #endif
         if (!bits) {
             bits = (*infoPtr->RealizeCursor) (infoPtr, pCurs);
@@ -143,18 +152,21 @@ xf86SetCursor(ScreenPtr pScreen, CursorPtr pCurs, int x, int y)
         (*infoPtr->HideCursor) (infoPtr->pScrn);
 
 #ifdef ARGB_CURSOR
-    if (pCurs->bits->argb && infoPtr->LoadCursorARGB)
-        (*infoPtr->LoadCursorARGB) (infoPtr->pScrn, pCurs);
-    else
+    if (pCurs->bits->argb && xf86DriverHasLoadCursorARGB(infoPtr)) {
+        if (!xf86DriverLoadCursorARGB (infoPtr, pCurs))
+            return FALSE;
+    } else
 #endif
     if (bits)
-        (*infoPtr->LoadCursorImage) (infoPtr->pScrn, bits);
+        if (!xf86DriverLoadCursorImage (infoPtr, bits))
+            return FALSE;
 
     xf86RecolorCursor(pScreen, pCurs, 1);
 
     (*infoPtr->SetCursorPosition) (infoPtr->pScrn, x, y);
 
     (*infoPtr->ShowCursor) (infoPtr->pScrn);
+    return TRUE;
 }
 
 void
@@ -173,8 +185,8 @@ xf86SetTransparentCursor(ScreenPtr pScreen)
         (*infoPtr->HideCursor) (infoPtr->pScrn);
 
     if (ScreenPriv->transparentData)
-        (*infoPtr->LoadCursorImage) (infoPtr->pScrn,
-                                     ScreenPriv->transparentData);
+        xf86DriverLoadCursorImage (infoPtr,
+                                   ScreenPriv->transparentData);
 
     (*infoPtr->ShowCursor) (infoPtr->pScrn);
 }
@@ -453,9 +465,9 @@ RealizeCursorInterleave16(xf86CursorInfoPtr infoPtr, CursorPtr pCurs)
     }
 
     /* 16 bit interleave */
-    DstS = (pointer) mem2;
+    DstS = (void *) mem2;
     DstM = DstS + (size >> 2);
-    pntr = (pointer) mem;
+    pntr = (void *) mem;
     count = (size >> 1);
     while (count) {
         *pntr++ = *DstS++;
@@ -488,9 +500,9 @@ RealizeCursorInterleave32(xf86CursorInfoPtr infoPtr, CursorPtr pCurs)
     }
 
     /* 32 bit interleave */
-    DstS = (pointer) mem2;
+    DstS = (void *) mem2;
     DstM = DstS + (size >> 3);
-    pntr = (pointer) mem;
+    pntr = (void *) mem;
     count = (size >> 2);
     while (count) {
         *pntr++ = *DstS++;
@@ -523,9 +535,9 @@ RealizeCursorInterleave64(xf86CursorInfoPtr infoPtr, CursorPtr pCurs)
     }
 
     /* 64 bit interleave */
-    DstS = (pointer) mem2;
+    DstS = (void *) mem2;
     DstM = DstS + (size >> 3);
-    pntr = (pointer) mem;
+    pntr = (void *) mem;
     count = (size >> 2);
     while (count) {
         *pntr++ = *DstS++;

@@ -58,7 +58,7 @@ extern HWND g_hwndClipboard;
 Bool
 winInitClipboard(void)
 {
-    ErrorF("winInitClipboard ()\n");
+    winDebug("winInitClipboard ()\n");
 
     /* Wrap some internal server functions */
     if (ProcVector[X_SetSelectionOwner] != winProcSetSelectionOwner) {
@@ -77,7 +77,7 @@ winInitClipboard(void)
 }
 
 /*
- * Create the Windows window that we use to recieve Windows messages
+ * Create the Windows window that we use to receive Windows messages
  */
 
 HWND

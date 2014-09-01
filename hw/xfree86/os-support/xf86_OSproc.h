@@ -132,12 +132,10 @@ _XFUNCPROTOBEGIN
 /* public functions */
 extern _X_EXPORT Bool xf86LinearVidMem(void);
 extern _X_EXPORT _X_DEPRECATED Bool xf86CheckMTRR(int);
-extern _X_EXPORT _X_DEPRECATED pointer xf86MapVidMem(int, int, unsigned long,
+extern _X_EXPORT _X_DEPRECATED void *xf86MapVidMem(int, int, unsigned long,
                                                      unsigned long);
-extern _X_EXPORT _X_DEPRECATED void xf86UnMapVidMem(int, pointer,
+extern _X_EXPORT _X_DEPRECATED void xf86UnMapVidMem(int, void *,
                                                     unsigned long);
-extern _X_EXPORT _X_DEPRECATED void xf86MapReadSideEffects(int, int, pointer,
-                                                           unsigned long);
 extern _X_EXPORT int xf86ReadBIOS(unsigned long, unsigned long, unsigned char *,
                                   int);
 extern _X_EXPORT Bool xf86EnableIO(void);
@@ -215,11 +213,18 @@ extern _X_EXPORT int xf86ProcessArgument(int, char **, int);
 extern _X_EXPORT void xf86UseMsg(void);
 extern _X_EXPORT PMClose xf86OSPMOpen(void);
 
-extern _X_EXPORT _X_DEPRECATED void xf86MakeNewMapping(int, int, unsigned long,
-                                                       unsigned long, pointer);
 extern _X_EXPORT void xf86InitVidMem(void);
 
 #endif                          /* XF86_OS_PRIVS */
+
+#ifdef XSERVER_PLATFORM_BUS
+#include "hotplug.h"
+void
+xf86PlatformDeviceProbe(struct OdevAttributes *attribs);
+
+void
+xf86PlatformReprobeDevice(int index, struct OdevAttributes *attribs);
+#endif
 
 _XFUNCPROTOEND
 #endif                          /* NO_OSLIB_PROTOTYPES */

@@ -1,8 +1,255 @@
-xorg-server (2:1.12.4-6+deb7u1) stable-security; urgency=low
+xorg-server (2:1.16.0-1) unstable; urgency=medium
 
-  * CVE-2013-4396
+  * New upstream release
+    + Revert "dix: fix up coordinate scaling when external monitors are
+      present" (closes: #754822)
 
- -- Moritz Muehlenhoff <jmm@debian.org>  Mon, 21 Oct 2013 16:43:03 +0000
+ -- Julien Cristau <jcristau@debian.org>  Fri, 18 Jul 2014 00:17:11 +0200
+
+xorg-server (2:1.15.99.904-1) unstable; urgency=medium
+
+  * New upstream release candidate.
+  * Make xserver-common Multi-Arch: foreign (closes: #693922)
+  * Add debian/upstream/signing-key.asc, and add pgpsigurlmangle option to
+    debian/watch, to allow uscan to verify tarball signatures.
+  * Upload to unstable.
+
+ -- Julien Cristau <jcristau@debian.org>  Tue, 08 Jul 2014 15:22:20 +0200
+
+xorg-server (2:1.15.99.903-3) experimental; urgency=medium
+
+  * Set shared memory dir to /dev/shm (closes: #747894).
+  * Disable dri3 on kfreebsd again to fix FTBFS.
+
+ -- Julien Cristau <jcristau@debian.org>  Tue, 10 Jun 2014 21:50:06 +0200
+
+xorg-server (2:1.15.99.903-2) experimental; urgency=medium
+
+  * Enable xwayland for the main build on linux (closes: #747950).
+
+ -- Julien Cristau <jcristau@debian.org>  Thu, 05 Jun 2014 21:58:45 +0200
+
+xorg-server (2:1.15.99.903-1) experimental; urgency=medium
+
+  * New upstream release candidate
+    - reverted quirk for "Evoluent VerticalMouse 3" (closes: #739537)
+    - Xi: block SIGIOs while copying device classes around (closes: #744303)
+    - fix FTBFS on arm
+    - add support for mips64 (closes: #725801)
+  * Enable dri3 on kfreebsd, now xtrans 1.3.3 supports fd passing.
+  * Enable glamor.
+  * Don't run tests in parallel.
+  * Bump video ABI and serverminver.
+  * Explicitly disable xwayland.
+
+ -- Julien Cristau <jcristau@debian.org>  Thu, 05 Jun 2014 20:14:56 +0200
+
+xorg-server (2:1.15.99.902-1) experimental; urgency=medium
+
+  * New upstream snapshot.
+    + fix Xephyr -screen (closes: #742028)
+  * Refresh patches.
+  * Bump video ABI to 17, input ABI to 21.
+  * Bump xtrans requirement to 1.3.3.
+  * Bump xproto and fontsproto requirements.
+
+ -- Julien Cristau <jcristau@debian.org>  Tue, 15 Apr 2014 08:35:26 +0200
+
+xorg-server (2:1.15.0.901-1) unstable; urgency=medium
+
+  [ Robert Millan ]
+  * Add devd input backend for kFreeBSD, and use it instead of hal (closes:
+    #736765, #710196, #683833)
+
+  [ Julien Cristau ]
+  * New upstream release
+
+ -- Julien Cristau <jcristau@debian.org>  Mon, 31 Mar 2014 12:19:57 +0200
+
+xorg-server (2:1.15.0-2) unstable; urgency=medium
+
+  [ Julien Cristau ]
+  * Bump debhelper compat level to 7.
+  * Upload to unstable.
+
+  [ Yaroslav Halchenko ]
+  * Adding xorg-server-source binary package to provide a tarball with
+    original (patched, autoreconfed) sources of the xserver (Closes:
+    #730552)
+
+ -- Julien Cristau <jcristau@debian.org>  Thu, 06 Feb 2014 16:14:15 +0100
+
+xorg-server (2:1.15.0-1) experimental; urgency=low
+
+  * New upstream release.
+
+ -- Maarten Lankhorst <maarten.lankhorst@ubuntu.com>  Mon, 06 Jan 2014 11:00:39 +0100
+
+xorg-server (2:1.14.99.904-2) experimental; urgency=medium
+
+  * Pass VERBOSE=1 to make check to make debugging test failures possible.
+  * Disable dri3 on kfreebsd.  xtrans doesn't enable fd passing there yet.
+
+ -- Julien Cristau <jcristau@debian.org>  Sat, 14 Dec 2013 18:16:17 +0100
+
+xorg-server (2:1.14.99.904-1) experimental; urgency=low
+
+  [ Julien Cristau ]
+  * New upstream release candidate.
+  * Update (build-)dependencies:
+    - bump x11proto-xext-dev, x11proto-gl-dev, xtrans-dev, libgl1-mesa-dev
+    - add x11proto-present-dev, x11proto-dri3-dev, libxshmfence-dev
+  * Enable dri3 (on !hurd) and present extensions.
+  * Point to http://www.debian.org/support instead of the uploader's email
+    address in the Xorg log.
+
+  [ Maarten Lankhorst ]
+  * Disable xorg-server's linux acpi and apm support.  Can only cause bugs.
+
+ -- Julien Cristau <jcristau@debian.org>  Thu, 12 Dec 2013 12:11:14 +0100
+
+xorg-server (2:1.14.99.3-1) experimental; urgency=low
+
+  * New upstream snapshot.
+  * Drop patches applied upstream:
+    - 02_improve-posix-saved-ids-check.diff
+    - 04_hashtabletest-s390x.diff
+    - 10_Include-missing-selection-h.diff
+    - os-move-arpa-inet.h-for-any-win32-system.patch
+    - xfree86-hurd-include-hurd.h.patch
+  * Update build-deps:
+    - bump libx11-dev to 2:1.6 for _XEatDataWords
+    - require xcb bits for Xephyr
+    - xserver-xorg-dev depends on x11proto-xf86bigfont-dev
+  * Bump ABI versions (should have been done upstream, but hasn't yet).
+  * Stop building Xfbdev.
+  * Reduce noise from dh_install --list-missing by deleting some files from the
+    udeb build after make install.
+  * Run abibumpcheck on build instead of clean so it's done on a patched tree.
+  * Remove Drew and Cyril from Uploaders.
+
+ -- Julien Cristau <jcristau@debian.org>  Mon, 21 Oct 2013 23:46:34 +0200
+
+xorg-server (2:1.14.5-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Maarten Lankhorst <maarten.lankhorst@ubuntu.com>  Fri, 13 Dec 2013 11:10:46 +0100
+
+xorg-server (2:1.14.4-1) unstable; urgency=low
+
+  * New upstream release.
+  * Drop upstreamed patches.
+    - 02_improve-posix-saved-ids-check.diff
+    - 04_hashtabletest-s390x.diff
+    - 10_Include-missing-selection-h.diff
+
+ -- Maarten Lankhorst <maarten.lankhorst@ubuntu.com>  Wed, 04 Dec 2013 13:09:36 +0100
+
+xorg-server (2:1.14.3-5) unstable; urgency=low
+
+  * Cherry-pick a upstream commit to fix mesa-10 driver loading.
+
+ -- Maarten Lankhorst <maarten.lankhorst@ubuntu.com>  Mon, 25 Nov 2013 14:52:54 +0100
+
+xorg-server (2:1.14.3-4) unstable; urgency=high
+
+  [ Timo Aaltonen ]
+  * rules: Drop defoma support from the font path. (Closes: #689233,
+    LP: #986061)
+
+  [ Julien Cristau ]
+  * Avoid use-after-free in dix/dixfonts.c: doImageText().  Addresses
+    CVE-2013-4396.
+
+ -- Julien Cristau <jcristau@debian.org>  Sat, 05 Oct 2013 15:57:55 +0200
+
+xorg-server (2:1.14.3-3) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Julien Cristau <jcristau@debian.org>  Sun, 22 Sep 2013 16:32:19 +0200
+
+xorg-server (2:1.14.3-2) experimental; urgency=low
+
+  * Delete test-driver on clean.
+  * Add a couple patches to fix FTBFS on hurd (closes: #720736).  Thanks, Pino
+    Toscano!
+
+ -- Julien Cristau <jcristau@debian.org>  Fri, 20 Sep 2013 00:21:41 +0200
+
+xorg-server (2:1.14.3-1) experimental; urgency=low
+
+  [ Julien Cristau ]
+  * Remove the Replaces: xdmx from xdmx-tools, that was before lenny.  That
+    change was done in the 1.10.x timeframe and then lost when moving to
+    1.11.x.
+
+  [ Michele Cane ]
+  * New upstream release.
+
+ -- Julien Cristau <jcristau@debian.org>  Sun, 15 Sep 2013 23:57:26 +0200
+
+xorg-server (2:1.14.2.901-2) experimental; urgency=low
+
+  * Use libbsd-overlay to get missing declarations on kfreebsd and fix FTBFS.
+    Require dpkg-dev 1.16.1.
+  * Also improve POSIX_SAVED_IDS check to work on kbsd.
+  * Link against libnettle.a, to unbreak the udeb (there's no libnettle udeb).
+  * Fix a test failure on 64bit big-endian (s390x, ppc64, sparc64).
+
+ -- Julien Cristau <jcristau@debian.org>  Sat, 03 Aug 2013 18:17:30 +0200
+
+xorg-server (2:1.14.2.901-1) experimental; urgency=low
+
+  * New upstream release
+
+  [ Maarten Lankhorst ]
+  * Bump minimum required abi, randr, dri2 and gl protos.
+  * Remove upstreamed patches.
+    - 02_Add-libnettle-as-option-for-sha1.diff
+    - 04_int10-fix-pci_device_read_rom-usage.diff
+    - 07_Revert-kinput-allocate-enough-space-for-null-charact.diff
+  * Bump x11proto-input-dev and libpixman-1-dev minimum versions.
+
+  [ Timo Aaltonen ]
+  * Refresh 02_Add-libnettle-as-option-for-sha1.diff.
+  * Remove 03_fix-panning.diff, upstream
+  * Refresh 04_int10-fix-pci_device_read_rom-usage.diff.
+  * Drop 09_EXA-Track...diff, upstream.
+  * control: Mark xvfb as M-A: foreign.
+  * control: Bump inputproto build-dep to 2.3.
+
+  [ Robert Hooker ]
+  * Update to a newer git snapshot, 7fe5e6dfa5c1e71
+  * Bump input ABI version in serverminver
+  * Bump libxi-dev build requirement to 2:1.6.99.1
+
+  [ Julien Cristau ]
+  * Merge sid branch up to 2:1.12.4-6.1.
+  * Drop old --disable-builddocs, --disable-xcalibrate configure options from
+    d/rules.
+  * Make build-deps match xserver-xorg-dev dependencies and configure checks.
+
+ -- Julien Cristau <jcristau@debian.org>  Sat, 27 Jul 2013 13:18:28 +0200
+
+xorg-server (2:1.12.4-6.2) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Cherry-pick Julien Cristau’s commits from debian-experimental:
+    Use libbsd-overlay to get missing declarations on kfreebsd and fix FTBFS.
+    02_improve-posix-saved-ids-check.diff
+
+ -- Michael Stapelberg <stapelberg@debian.org>  Thu, 22 Aug 2013 18:34:21 +0200
+
+xorg-server (2:1.12.4-6.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * 10_Include-missing-selection-h.diff: Fix FTBFS with GCC 4.8. Include
+    selection.h in dix/window.c for the missing DeleteWindowFromAnySelections
+    function prototype. Patch by Gerardo Malazdrewicz (closes: #701372)
+
+ -- Michael Biebl <biebl@debian.org>  Thu, 25 Jul 2013 19:45:29 +0200
 
 xorg-server (2:1.12.4-6) unstable; urgency=low
 

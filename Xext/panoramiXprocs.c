@@ -72,7 +72,7 @@ PanoramiXCreateWindow(ClientPtr client)
     if (Ones(stuff->mask) != len)
         return BadLength;
 
-    result = dixLookupResourceByType((pointer *) &parent, stuff->parent,
+    result = dixLookupResourceByType((void **) &parent, stuff->parent,
                                      XRT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -87,7 +87,7 @@ PanoramiXCreateWindow(ClientPtr client)
         pback_offset = Ones((Mask) stuff->mask & (CWBackPixmap - 1));
         tmp = *((CARD32 *) &stuff[1] + pback_offset);
         if ((tmp != None) && (tmp != ParentRelative)) {
-            result = dixLookupResourceByType((pointer *) &backPix, tmp,
+            result = dixLookupResourceByType((void **) &backPix, tmp,
                                              XRT_PIXMAP, client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -97,7 +97,7 @@ PanoramiXCreateWindow(ClientPtr client)
         pbord_offset = Ones((Mask) stuff->mask & (CWBorderPixmap - 1));
         tmp = *((CARD32 *) &stuff[1] + pbord_offset);
         if (tmp != CopyFromParent) {
-            result = dixLookupResourceByType((pointer *) &bordPix, tmp,
+            result = dixLookupResourceByType((void **) &bordPix, tmp,
                                              XRT_PIXMAP, client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -107,7 +107,7 @@ PanoramiXCreateWindow(ClientPtr client)
         cmap_offset = Ones((Mask) stuff->mask & (CWColormap - 1));
         tmp = *((CARD32 *) &stuff[1] + cmap_offset);
         if ((tmp != CopyFromParent) && (tmp != None)) {
-            result = dixLookupResourceByType((pointer *) &cmap, tmp,
+            result = dixLookupResourceByType((void **) &cmap, tmp,
                                              XRT_COLORMAP, client,
                                              DixReadAccess);
             if (result != Success)
@@ -178,7 +178,7 @@ PanoramiXChangeWindowAttributes(ClientPtr client)
     if (Ones(stuff->valueMask) != len)
         return BadLength;
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->window,
+    result = dixLookupResourceByType((void **) &win, stuff->window,
                                      XRT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -191,7 +191,7 @@ PanoramiXChangeWindowAttributes(ClientPtr client)
         pback_offset = Ones((Mask) stuff->valueMask & (CWBackPixmap - 1));
         tmp = *((CARD32 *) &stuff[1] + pback_offset);
         if ((tmp != None) && (tmp != ParentRelative)) {
-            result = dixLookupResourceByType((pointer *) &backPix, tmp,
+            result = dixLookupResourceByType((void **) &backPix, tmp,
                                              XRT_PIXMAP, client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -201,7 +201,7 @@ PanoramiXChangeWindowAttributes(ClientPtr client)
         pbord_offset = Ones((Mask) stuff->valueMask & (CWBorderPixmap - 1));
         tmp = *((CARD32 *) &stuff[1] + pbord_offset);
         if (tmp != CopyFromParent) {
-            result = dixLookupResourceByType((pointer *) &bordPix, tmp,
+            result = dixLookupResourceByType((void **) &bordPix, tmp,
                                              XRT_PIXMAP, client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -211,7 +211,7 @@ PanoramiXChangeWindowAttributes(ClientPtr client)
         cmap_offset = Ones((Mask) stuff->valueMask & (CWColormap - 1));
         tmp = *((CARD32 *) &stuff[1] + cmap_offset);
         if ((tmp != CopyFromParent) && (tmp != None)) {
-            result = dixLookupResourceByType((pointer *) &cmap, tmp,
+            result = dixLookupResourceByType((void **) &cmap, tmp,
                                              XRT_COLORMAP, client,
                                              DixReadAccess);
             if (result != Success)
@@ -243,7 +243,7 @@ PanoramiXDestroyWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->id, XRT_WINDOW,
+    result = dixLookupResourceByType((void **) &win, stuff->id, XRT_WINDOW,
                                      client, DixDestroyAccess);
     if (result != Success)
         return result;
@@ -271,7 +271,7 @@ PanoramiXDestroySubwindows(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->id, XRT_WINDOW,
+    result = dixLookupResourceByType((void **) &win, stuff->id, XRT_WINDOW,
                                      client, DixDestroyAccess);
     if (result != Success)
         return result;
@@ -299,7 +299,7 @@ PanoramiXChangeSaveSet(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xChangeSaveSetReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->window,
+    result = dixLookupResourceByType((void **) &win, stuff->window,
                                      XRT_WINDOW, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -326,12 +326,12 @@ PanoramiXReparentWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xReparentWindowReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->window,
+    result = dixLookupResourceByType((void **) &win, stuff->window,
                                      XRT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
 
-    result = dixLookupResourceByType((pointer *) &parent, stuff->parent,
+    result = dixLookupResourceByType((void **) &parent, stuff->parent,
                                      XRT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -365,7 +365,7 @@ PanoramiXMapWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->id,
+    result = dixLookupResourceByType((void **) &win, stuff->id,
                                      XRT_WINDOW, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -390,7 +390,7 @@ PanoramiXMapSubwindows(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->id,
+    result = dixLookupResourceByType((void **) &win, stuff->id,
                                      XRT_WINDOW, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -415,7 +415,7 @@ PanoramiXUnmapWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->id,
+    result = dixLookupResourceByType((void **) &win, stuff->id,
                                      XRT_WINDOW, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -440,7 +440,7 @@ PanoramiXUnmapSubwindows(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->id,
+    result = dixLookupResourceByType((void **) &win, stuff->id,
                                      XRT_WINDOW, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -474,12 +474,12 @@ PanoramiXConfigureWindow(ClientPtr client)
         return BadLength;
 
     /* because we need the parent */
-    result = dixLookupResourceByType((pointer *) &pWin, stuff->window,
+    result = dixLookupResourceByType((void **) &pWin, stuff->window,
                                      RT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->window,
+    result = dixLookupResourceByType((void **) &win, stuff->window,
                                      XRT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -489,7 +489,7 @@ PanoramiXConfigureWindow(ClientPtr client)
 
         sib_offset = Ones((Mask) stuff->mask & (CWSibling - 1));
         if ((tmp = *((CARD32 *) &stuff[1] + sib_offset))) {
-            result = dixLookupResourceByType((pointer *) &sib, tmp, XRT_WINDOW,
+            result = dixLookupResourceByType((void **) &sib, tmp, XRT_WINDOW,
                                              client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -537,7 +537,7 @@ PanoramiXCirculateWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCirculateWindowReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->window,
+    result = dixLookupResourceByType((void **) &win, stuff->window,
                                      XRT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -566,14 +566,18 @@ PanoramiXGetGeometry(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    rep.type = X_Reply;
-    rep.length = 0;
-    rep.sequenceNumber = client->sequence;
-    rep.root = screenInfo.screens[0]->root->drawable.id;
-    rep.depth = pDraw->depth;
-    rep.width = pDraw->width;
-    rep.height = pDraw->height;
-    rep.x = rep.y = rep.borderWidth = 0;
+    rep = (xGetGeometryReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = 0,
+        .root = screenInfo.screens[0]->root->drawable.id,
+        .depth = pDraw->depth,
+        .width = pDraw->width,
+        .height = pDraw->height,
+        .x = 0,
+        .y = 0,
+        .borderWidth = 0
+    };
 
     if (stuff->id == rep.root) {
         xWindowRoot *root = (xWindowRoot *)
@@ -617,11 +621,13 @@ PanoramiXTranslateCoords(ClientPtr client)
     rc = dixLookupWindow(&pDst, stuff->dstWid, client, DixReadAccess);
     if (rc != Success)
         return rc;
-    rep.type = X_Reply;
-    rep.length = 0;
-    rep.sequenceNumber = client->sequence;
-    rep.sameScreen = xTrue;
-    rep.child = None;
+    rep = (xTranslateCoordsReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .length = 0,
+        .sameScreen = xTrue,
+        .child = None
+    };
 
     if ((pWin == screenInfo.screens[0]->root) ||
         (pWin->drawable.id == screenInfo.screens[0]->screensaver.wid)) {
@@ -681,7 +687,7 @@ PanoramiXCreatePixmap(ClientPtr client)
     REQUEST_SIZE_MATCH(xCreatePixmapReq);
     client->errorValue = stuff->pid;
 
-    result = dixLookupResourceByClass((pointer *) &refDraw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &refDraw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixReadAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -721,7 +727,7 @@ PanoramiXFreePixmap(ClientPtr client)
 
     client->errorValue = stuff->id;
 
-    result = dixLookupResourceByType((pointer *) &pix, stuff->id, XRT_PIXMAP,
+    result = dixLookupResourceByType((void **) &pix, stuff->id, XRT_PIXMAP,
                                      client, DixDestroyAccess);
     if (result != Success)
         return result;
@@ -760,7 +766,7 @@ PanoramiXCreateGC(ClientPtr client)
     if (Ones(stuff->mask) != len)
         return BadLength;
 
-    result = dixLookupResourceByClass((pointer *) &refDraw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &refDraw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixReadAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -768,7 +774,7 @@ PanoramiXCreateGC(ClientPtr client)
     if ((Mask) stuff->mask & GCTile) {
         tile_offset = Ones((Mask) stuff->mask & (GCTile - 1));
         if ((tmp = *((CARD32 *) &stuff[1] + tile_offset))) {
-            result = dixLookupResourceByType((pointer *) &tile, tmp, XRT_PIXMAP,
+            result = dixLookupResourceByType((void **) &tile, tmp, XRT_PIXMAP,
                                              client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -777,7 +783,7 @@ PanoramiXCreateGC(ClientPtr client)
     if ((Mask) stuff->mask & GCStipple) {
         stip_offset = Ones((Mask) stuff->mask & (GCStipple - 1));
         if ((tmp = *((CARD32 *) &stuff[1] + stip_offset))) {
-            result = dixLookupResourceByType((pointer *) &stip, tmp, XRT_PIXMAP,
+            result = dixLookupResourceByType((void **) &stip, tmp, XRT_PIXMAP,
                                              client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -786,7 +792,7 @@ PanoramiXCreateGC(ClientPtr client)
     if ((Mask) stuff->mask & GCClipMask) {
         clip_offset = Ones((Mask) stuff->mask & (GCClipMask - 1));
         if ((tmp = *((CARD32 *) &stuff[1] + clip_offset))) {
-            result = dixLookupResourceByType((pointer *) &clip, tmp, XRT_PIXMAP,
+            result = dixLookupResourceByType((void **) &clip, tmp, XRT_PIXMAP,
                                              client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -840,7 +846,7 @@ PanoramiXChangeGC(ClientPtr client)
     if (Ones(stuff->mask) != len)
         return BadLength;
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -848,7 +854,7 @@ PanoramiXChangeGC(ClientPtr client)
     if ((Mask) stuff->mask & GCTile) {
         tile_offset = Ones((Mask) stuff->mask & (GCTile - 1));
         if ((tmp = *((CARD32 *) &stuff[1] + tile_offset))) {
-            result = dixLookupResourceByType((pointer *) &tile, tmp, XRT_PIXMAP,
+            result = dixLookupResourceByType((void **) &tile, tmp, XRT_PIXMAP,
                                              client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -857,7 +863,7 @@ PanoramiXChangeGC(ClientPtr client)
     if ((Mask) stuff->mask & GCStipple) {
         stip_offset = Ones((Mask) stuff->mask & (GCStipple - 1));
         if ((tmp = *((CARD32 *) &stuff[1] + stip_offset))) {
-            result = dixLookupResourceByType((pointer *) &stip, tmp, XRT_PIXMAP,
+            result = dixLookupResourceByType((void **) &stip, tmp, XRT_PIXMAP,
                                              client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -866,7 +872,7 @@ PanoramiXChangeGC(ClientPtr client)
     if ((Mask) stuff->mask & GCClipMask) {
         clip_offset = Ones((Mask) stuff->mask & (GCClipMask - 1));
         if ((tmp = *((CARD32 *) &stuff[1] + clip_offset))) {
-            result = dixLookupResourceByType((pointer *) &clip, tmp, XRT_PIXMAP,
+            result = dixLookupResourceByType((void **) &clip, tmp, XRT_PIXMAP,
                                              client, DixReadAccess);
             if (result != Success)
                 return result;
@@ -899,12 +905,12 @@ PanoramiXCopyGC(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCopyGCReq);
 
-    result = dixLookupResourceByType((pointer *) &srcGC, stuff->srcGC, XRT_GC,
+    result = dixLookupResourceByType((void **) &srcGC, stuff->srcGC, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
 
-    result = dixLookupResourceByType((pointer *) &dstGC, stuff->dstGC, XRT_GC,
+    result = dixLookupResourceByType((void **) &dstGC, stuff->dstGC, XRT_GC,
                                      client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -930,7 +936,7 @@ PanoramiXSetDashes(ClientPtr client)
 
     REQUEST_FIXED_SIZE(xSetDashesReq, stuff->nDashes);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -955,7 +961,7 @@ PanoramiXSetClipRectangles(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xSetClipRectanglesReq);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -980,7 +986,7 @@ PanoramiXFreeGC(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->id, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->id, XRT_GC,
                                      client, DixDestroyAccess);
     if (result != Success)
         return result;
@@ -1009,7 +1015,7 @@ PanoramiXClearToBackground(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xClearAreaReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->window,
+    result = dixLookupResourceByType((void **) &win, stuff->window,
                                      XRT_WINDOW, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -1054,14 +1060,14 @@ PanoramiXCopyArea(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCopyAreaReq);
 
-    result = dixLookupResourceByClass((pointer *) &src, stuff->srcDrawable,
+    result = dixLookupResourceByClass((void **) &src, stuff->srcDrawable,
                                       XRC_DRAWABLE, client, DixReadAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
 
     srcShared = IS_SHARED_PIXMAP(src);
 
-    result = dixLookupResourceByClass((pointer *) &dst, stuff->dstDrawable,
+    result = dixLookupResourceByClass((void **) &dst, stuff->dstDrawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1071,7 +1077,7 @@ PanoramiXCopyArea(ClientPtr client)
     if (dstShared && srcShared)
         return (*SavedProcVector[X_CopyArea]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1213,14 +1219,14 @@ PanoramiXCopyPlane(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCopyPlaneReq);
 
-    rc = dixLookupResourceByClass((pointer *) &src, stuff->srcDrawable,
+    rc = dixLookupResourceByClass((void **) &src, stuff->srcDrawable,
                                   XRC_DRAWABLE, client, DixReadAccess);
     if (rc != Success)
         return (rc == BadValue) ? BadDrawable : rc;
 
     srcShared = IS_SHARED_PIXMAP(src);
 
-    rc = dixLookupResourceByClass((pointer *) &dst, stuff->dstDrawable,
+    rc = dixLookupResourceByClass((void **) &dst, stuff->dstDrawable,
                                   XRC_DRAWABLE, client, DixWriteAccess);
     if (rc != Success)
         return (rc == BadValue) ? BadDrawable : rc;
@@ -1230,7 +1236,7 @@ PanoramiXCopyPlane(ClientPtr client)
     if (dstShared && srcShared)
         return (*SavedProcVector[X_CopyPlane]) (client);
 
-    rc = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    rc = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                  client, DixReadAccess);
     if (rc != Success)
         return rc;
@@ -1321,7 +1327,7 @@ PanoramiXPolyPoint(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyPointReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1329,7 +1335,7 @@ PanoramiXPolyPoint(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyPoint]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1386,7 +1392,7 @@ PanoramiXPolyLine(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyLineReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1394,7 +1400,7 @@ PanoramiXPolyLine(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyLine]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1451,7 +1457,7 @@ PanoramiXPolySegment(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolySegmentReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1459,7 +1465,7 @@ PanoramiXPolySegment(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolySegment]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1519,7 +1525,7 @@ PanoramiXPolyRectangle(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyRectangleReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1527,7 +1533,7 @@ PanoramiXPolyRectangle(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyRectangle]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1586,7 +1592,7 @@ PanoramiXPolyArc(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyArcReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1594,7 +1600,7 @@ PanoramiXPolyArc(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyArc]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1651,7 +1657,7 @@ PanoramiXFillPoly(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xFillPolyReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1659,7 +1665,7 @@ PanoramiXFillPoly(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_FillPoly]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1717,7 +1723,7 @@ PanoramiXPolyFillRectangle(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyFillRectangleReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1725,7 +1731,7 @@ PanoramiXPolyFillRectangle(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyFillRectangle]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1784,7 +1790,7 @@ PanoramiXPolyFillArc(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyFillArcReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1792,7 +1798,7 @@ PanoramiXPolyFillArc(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyFillArc]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1849,7 +1855,7 @@ PanoramiXPutImage(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPutImageReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -1857,7 +1863,7 @@ PanoramiXPutImage(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PutImage]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -1903,7 +1909,7 @@ PanoramiXGetImage(ClientPtr client)
         return BadValue;
     }
 
-    rc = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    rc = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                   XRC_DRAWABLE, client, DixWriteAccess);
     if (rc != Success)
         return (rc == BadValue) ? BadDrawable : rc;
@@ -1954,10 +1960,12 @@ PanoramiXGetImage(ClientPtr client)
             return rc;
     }
 
-    xgi.visual = wVisual(((WindowPtr) pDraw));
-    xgi.type = X_Reply;
-    xgi.sequenceNumber = client->sequence;
-    xgi.depth = pDraw->depth;
+    xgi = (xGetImageReply) {
+        .type = X_Reply,
+        .sequenceNumber = client->sequence,
+        .visual = wVisual(((WindowPtr) pDraw)),
+        .depth = pDraw->depth
+    };
     if (format == ZPixmap) {
         widthBytesLine = PixmapBytePad(w, pDraw->depth);
         length = widthBytesLine * h;
@@ -2003,7 +2011,7 @@ PanoramiXGetImage(ClientPtr client)
                                  format, planemask, pBuf, widthBytesLine,
                                  isRoot);
 
-            (void) WriteToClient(client, (int) (nlines * widthBytesLine), pBuf);
+            WriteToClient(client, (int) (nlines * widthBytesLine), pBuf);
             linesDone += nlines;
         }
     }
@@ -2020,8 +2028,7 @@ PanoramiXGetImage(ClientPtr client)
                                          nlines, format, plane, pBuf,
                                          widthBytesLine, isRoot);
 
-                    (void) WriteToClient(client,
-                                         (int) (nlines * widthBytesLine), pBuf);
+                    WriteToClient(client, (int)(nlines * widthBytesLine), pBuf);
 
                     linesDone += nlines;
                 }
@@ -2048,7 +2055,7 @@ PanoramiXPolyText8(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyTextReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -2056,7 +2063,7 @@ PanoramiXPolyText8(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyText8]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -2091,7 +2098,7 @@ PanoramiXPolyText16(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xPolyTextReq);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -2099,7 +2106,7 @@ PanoramiXPolyText16(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_PolyText16]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -2134,7 +2141,7 @@ PanoramiXImageText8(ClientPtr client)
 
     REQUEST_FIXED_SIZE(xImageTextReq, stuff->nChars);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -2142,7 +2149,7 @@ PanoramiXImageText8(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_ImageText8]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -2177,7 +2184,7 @@ PanoramiXImageText16(ClientPtr client)
 
     REQUEST_FIXED_SIZE(xImageTextReq, stuff->nChars << 1);
 
-    result = dixLookupResourceByClass((pointer *) &draw, stuff->drawable,
+    result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
                                       XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
@@ -2185,7 +2192,7 @@ PanoramiXImageText16(ClientPtr client)
     if (IS_SHARED_PIXMAP(draw))
         return (*SavedProcVector[X_ImageText16]) (client);
 
-    result = dixLookupResourceByType((pointer *) &gc, stuff->gc, XRT_GC,
+    result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -2218,7 +2225,7 @@ PanoramiXCreateColormap(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCreateColormapReq);
 
-    result = dixLookupResourceByType((pointer *) &win, stuff->window,
+    result = dixLookupResourceByType((void **) &win, stuff->window,
                                      XRT_WINDOW, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -2259,7 +2266,7 @@ PanoramiXFreeColormap(ClientPtr client)
 
     client->errorValue = stuff->id;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->id, XRT_COLORMAP,
+    result = dixLookupResourceByType((void **) &cmap, stuff->id, XRT_COLORMAP,
                                      client, DixDestroyAccess);
     if (result != Success)
         return result;
@@ -2289,7 +2296,7 @@ PanoramiXCopyColormapAndFree(ClientPtr client)
 
     client->errorValue = stuff->srcCmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->srcCmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->srcCmap,
                                      XRT_COLORMAP, client,
                                      DixReadAccess | DixWriteAccess);
     if (result != Success)
@@ -2328,7 +2335,7 @@ PanoramiXInstallColormap(ClientPtr client)
 
     client->errorValue = stuff->id;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->id, XRT_COLORMAP,
+    result = dixLookupResourceByType((void **) &cmap, stuff->id, XRT_COLORMAP,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -2353,7 +2360,7 @@ PanoramiXUninstallColormap(ClientPtr client)
 
     client->errorValue = stuff->id;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->id, XRT_COLORMAP,
+    result = dixLookupResourceByType((void **) &cmap, stuff->id, XRT_COLORMAP,
                                      client, DixReadAccess);
     if (result != Success)
         return result;
@@ -2379,7 +2386,7 @@ PanoramiXAllocColor(ClientPtr client)
 
     client->errorValue = stuff->cmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->cmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->cmap,
                                      XRT_COLORMAP, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -2405,7 +2412,7 @@ PanoramiXAllocNamedColor(ClientPtr client)
 
     client->errorValue = stuff->cmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->cmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->cmap,
                                      XRT_COLORMAP, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -2431,7 +2438,7 @@ PanoramiXAllocColorCells(ClientPtr client)
 
     client->errorValue = stuff->cmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->cmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->cmap,
                                      XRT_COLORMAP, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -2457,7 +2464,7 @@ PanoramiXAllocColorPlanes(ClientPtr client)
 
     client->errorValue = stuff->cmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->cmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->cmap,
                                      XRT_COLORMAP, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -2483,7 +2490,7 @@ PanoramiXFreeColors(ClientPtr client)
 
     client->errorValue = stuff->cmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->cmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->cmap,
                                      XRT_COLORMAP, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -2507,7 +2514,7 @@ PanoramiXStoreColors(ClientPtr client)
 
     client->errorValue = stuff->cmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->cmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->cmap,
                                      XRT_COLORMAP, client, DixWriteAccess);
     if (result != Success)
         return result;
@@ -2533,7 +2540,7 @@ PanoramiXStoreNamedColor(ClientPtr client)
 
     client->errorValue = stuff->cmap;
 
-    result = dixLookupResourceByType((pointer *) &cmap, stuff->cmap,
+    result = dixLookupResourceByType((void **) &cmap, stuff->cmap,
                                      XRT_COLORMAP, client, DixWriteAccess);
     if (result != Success)
         return result;

@@ -160,7 +160,7 @@ exaFindAreaToEvict(ExaScreenPrivPtr pExaScr, int size, int align)
  */
 ExaOffscreenArea *
 exaOffscreenAlloc(ScreenPtr pScreen, int size, int align,
-                  Bool locked, ExaOffscreenSaveProc save, pointer privData)
+                  Bool locked, ExaOffscreenSaveProc save, void *privData)
 {
     ExaOffscreenArea *area;
 
@@ -360,10 +360,8 @@ ExaOffscreenSwapIn(ScreenPtr pScreen)
  * swapped out.
  */
 void
-exaEnableDisableFBAccess(int index, Bool enable)
+exaEnableDisableFBAccess(ScreenPtr pScreen, Bool enable)
 {
-    ScreenPtr pScreen = screenInfo.screens[index];
-
     ExaScreenPriv(pScreen);
 
     if (pExaScr->info->flags & EXA_HANDLES_PIXMAPS)
