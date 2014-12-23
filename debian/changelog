@@ -1,3 +1,25 @@
+xorg-server (2:1.7.7-18+deb6u1) squeeze-lts; urgency=high
+
+  * Non-maintainer upload by the Debian LTS Team.
+  * Backport many upstream patches to fix the following CVE:
+    - CVE-2014-8091
+    - CVE-2014-8092
+    - CVE-2014-8093
+    - CVE-2014-8094
+    - CVE-2014-8095
+    - CVE-2014-8096
+    - CVE-2014-8097
+    - CVE-2014-8098
+    - CVE-2014-8099
+    - CVE-2014-8100
+    - CVE-2014-8101
+    - CVE-2014-8102
+    Backport has been made after the patch list provided by the upstream
+    developers here:
+    http://www.x.org/wiki/Development/Security/Advisory-2014-12-09/
+
+ -- Raphaël Hertzog <hertzog@debian.org>  Thu, 18 Dec 2014 15:22:58 +0100
+
 xorg-server (2:1.7.7-18) squeeze-security; urgency=high
 
   * exa: only draw valid trapezoids

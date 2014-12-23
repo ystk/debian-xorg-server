@@ -24,3 +24,35 @@
 23-xf86-fix-flush-input-to-work-with-Linux-evdev-device.diff
 24-CVE-2013-4396.diff
 25-CVE-2013-6424.diff
+26-CVE-2014-8091.diff
+27-CVE-2014-8092_1.diff
+27-CVE-2014-8092_2.diff
+#27-CVE-2014-8092_3.diff # Version 1.7.7 does not provide RegionSizeof
+27-CVE-2014-8092_4.diff
+28-CVE-2014-8094.diff
+29-CVE-2014-8097.diff
+29-CVE-2014-8095.diff
+29-CVE-2014-8096.diff
+29-CVE-2014-8099.diff
+29-CVE-2014-8101.diff
+29-CVE-2014-8100_1.diff
+29-CVE-2014-8100_2.diff
+29-CVE-2014-8102.diff
+29-extra_tests_1.diff
+29-extra_tests_2.diff
+#29-extra_tests_3.diff # no test/misc.c in version 1.7.7
+29-CVE-2014-8093_1.diff
+29-CVE-2014-8093_2.diff
+29-CVE-2014-8093_3.diff
+29-CVE-2014-8098_1.diff
+29-CVE-2014-8093_4.diff
+29-CVE-2014-8098_2.diff
+29-CVE-2014-8093_5.diff
+29-CVE-2014-8098_3.diff
+29-CVE-2014-8098_4.diff
+#29-CVE-2014-8098_5.diff # no glx/clientinfo.c in version 1.7.7
+29-CVE-2014-8098_6.diff
+29-CVE-2014-8098_7.diff
+29-CVE-2014-8098_8.diff
+29-CVE-2014-8093_6.diff
+#29-CVE-2014-8098_9.diff # no glx/clientinfo.c in version 1.7.7

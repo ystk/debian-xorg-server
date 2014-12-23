@@ -1,0 +1,48 @@
+From 2df83bb122debc3c20cfc3d3b0edc85cd0270f79 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 9 Feb 2014 21:28:05 -0800
+Subject: Add request length checking test cases for some Xinput 2.x requests
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
+
+[hertzog@debian.org: Backported to apply on version 1.7.7]
+--- a/test/xi2/protocol-xigetclientpointer.c
++++ b/test/xi2/protocol-xigetclientpointer.c
+@@ -125,6 +125,11 @@ static void test_XIGetClientPointer(void
+     request.win = INVALID_WINDOW_ID;
+     request_XIGetClientPointer(&client_request, &request, BadWindow);
+ 
++    printf("Testing invalid length\n");
++    client_request.req_len -= 4;
++    request_XIGetClientPointer(&client_request, &request, BadLength);
++    client_request.req_len += 4;
++
+     test_data.cp_is_set = FALSE;
+ 
+     g_test_message("Testing window None, unset ClientPointer.");
+--- a/test/xi2/protocol-xiquerypointer.c
++++ b/test/xi2/protocol-xiquerypointer.c
+@@ -205,6 +205,10 @@ static void test_XIQueryPointer(void)
+     test_data.dev = devices.mouse;
+     request.deviceid = devices.mouse->id;
+     request_XIQueryPointer(&client_request, &request, Success);
++
++    /* test REQUEST_SIZE_MATCH */
++    client_request.req_len -= 4;
++    request_XIQueryPointer(&client_request, &request, BadLength);
+ }
+ 
+ int main(int argc, char** argv)
+--- a/test/xi2/protocol-xiwarppointer.c
++++ b/test/xi2/protocol-xiwarppointer.c
+@@ -200,6 +200,9 @@ static void test_XIWarpPointer(void)
+     request_XIWarpPointer(&client_request, &request, Success);
+ 
+     /* FIXME: src_x/y checks */
++
++    client_request.req_len -= 2; /* invalid length */
++    request_XIWarpPointer(&client_request, &request, BadLength);
+ }
+ 
+ int main(int argc, char** argv)
