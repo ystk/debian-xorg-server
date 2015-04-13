@@ -1,3 +1,72 @@
+xorg-server (2:1.16.4-1) unstable; urgency=high
+
+  * New upstream release
+    + dix: Allow zero-height PutImage requests (closes: #774308)
+    + os: Fix timer race conditions
+    + randr: attempt to fix primary on slave output
+    + config/udev: Respect seat assignments when assigned devices
+    + dix: make RegionInit legal C++
+    + dri2: SourceOffloads may be for DRI3 only
+    + xkb: Don't swap XkbSetGeometry data in the input buffer
+    + xkb: Check strings length against request size (CVE-2015-0255)
+
+ -- Julien Cristau <jcristau@debian.org>  Wed, 11 Feb 2015 01:26:07 +0100
+
+xorg-server (2:1.16.2.901-1) unstable; urgency=medium
+
+  * New upstream release
+    + fb: Fix Bresenham algorithms for commonly used small segments
+    + denial of service due to unchecked malloc in client authentication
+      [CVE-2014-8091]
+    + integer overflows calculating memory needs for requests [CVE-2014-8092,
+      CVE-2014-8093, CVE-2014-8094]
+    + out of bounds access due to not validating length or offset values in
+      requests [CVE-2014-8095, CVE-2014-8096, CVE-2014-8097, CVE-2014-8098,
+      CVE-2014-8099, CVE-2014-8100, CVE-2014-8101, CVE-2014-8102,
+      CVE-2014-8103]
+    See http://www.x.org/wiki/Development/Security/Advisory-2014-12-09/
+  * Drop 06_Revert-fb-reorder-Bresenham-error-correction-to-avoi.diff,
+    obsoleted by the upstream fix (closes: #752156)
+  * 09_Xserver-man-iglx.diff: adjust Xserver man page, we disable indirect glx
+    contexts by default.
+
+ -- Julien Cristau <jcristau@debian.org>  Tue, 09 Dec 2014 22:04:20 +0100
+
+xorg-server (2:1.16.1.901-1) unstable; urgency=medium
+
+  * New upstream release.
+    + Xext/shm: Detach SHM segment after Pixmap is released
+    + Fix present_notify to return right away when querying current or past msc
+    + Fix present_pixmap when using present_notify_msc
+    + xkb: ignore floating slave devices when updating from master
+    + fb: Fix invalid bpp for 24bit depth window
+
+ -- Julien Cristau <jcristau@debian.org>  Mon, 03 Nov 2014 21:36:14 +0100
+
+xorg-server (2:1.16.1-1) unstable; urgency=medium
+
+  * Add my key to debian/upstream/signing-key.asc.
+  * New upstream release.
+  * Update help text since -iglx is now the default (cherry-pick from master)
+
+ -- Julien Cristau <jcristau@debian.org>  Mon, 22 Sep 2014 22:12:20 +0200
+
+xorg-server (2:1.16.0.901-1) unstable; urgency=medium
+
+  * New upstream release
+    + glx/present: Only send GLX_BufferSwapComplete for PresentCompleteKindPixmap (closes: #761393)
+  * glx: Disable indirect GLX contexts by default (cherry-pick from master)
+
+ -- Julien Cristau <jcristau@debian.org>  Tue, 16 Sep 2014 15:44:55 +0200
+
+xorg-server (2:1.16.0-2) unstable; urgency=medium
+
+  * xserver-xorg-dev: /usr/share/xserver-xorg/configure_flags.mk
+    Provide the flags how the xserver was configured (closes: #757246).  Based
+    on Ubuntu patch by Matthias Klose.  Thanks, Yaroslav Halchenko!
+
+ -- Julien Cristau <jcristau@debian.org>  Sun, 31 Aug 2014 11:58:36 -0700
+
 xorg-server (2:1.16.0-1) unstable; urgency=medium
 
   * New upstream release

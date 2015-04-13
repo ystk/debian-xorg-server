@@ -62,7 +62,7 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "winprefsyacc.y" /* yacc.c:339  */
+#line 1 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:339  */
 
 /*
  * Copyright (C) 1994-2000 The XFree86 Project, Inc. All Rights Reserved.
@@ -252,7 +252,7 @@ extern int yydebug;
 typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 89 "winprefsyacc.y" /* yacc.c:355  */
+#line 89 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:355  */
 
   char *sVal;
   unsigned long uVal;
@@ -1429,229 +1429,229 @@ yyreduce:
   switch (yyn)
     {
         case 20:
-#line 159 "winprefsyacc.y" /* yacc.c:1646  */
+#line 159 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { SetTrayIcon((yyvsp[-1].sVal)); free((yyvsp[-1].sVal)); }
 #line 1435 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 162 "winprefsyacc.y" /* yacc.c:1646  */
+#line 162 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { SetRootMenu((yyvsp[-1].sVal)); free((yyvsp[-1].sVal)); }
 #line 1441 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 165 "winprefsyacc.y" /* yacc.c:1646  */
+#line 165 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { SetDefaultSysMenu((yyvsp[-2].sVal), (yyvsp[-1].iVal)); free((yyvsp[-2].sVal)); }
 #line 1447 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 168 "winprefsyacc.y" /* yacc.c:1646  */
+#line 168 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { SetDefaultIcon((yyvsp[-1].sVal)); free((yyvsp[-1].sVal)); }
 #line 1453 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 171 "winprefsyacc.y" /* yacc.c:1646  */
+#line 171 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { SetIconDirectory((yyvsp[-1].sVal)); free((yyvsp[-1].sVal)); }
 #line 1459 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 25:
-#line 174 "winprefsyacc.y" /* yacc.c:1646  */
+#line 174 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddMenuLine("-", CMD_SEPARATOR, ""); }
 #line 1465 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 175 "winprefsyacc.y" /* yacc.c:1646  */
+#line 175 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddMenuLine((yyvsp[-3].sVal), CMD_ALWAYSONTOP, ""); free((yyvsp[-3].sVal)); }
 #line 1471 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 176 "winprefsyacc.y" /* yacc.c:1646  */
+#line 176 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddMenuLine((yyvsp[-4].sVal), CMD_EXEC, (yyvsp[-2].sVal)); free((yyvsp[-4].sVal)); free((yyvsp[-2].sVal)); }
 #line 1477 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 177 "winprefsyacc.y" /* yacc.c:1646  */
+#line 177 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddMenuLine((yyvsp[-4].sVal), CMD_MENU, (yyvsp[-2].sVal)); free((yyvsp[-4].sVal)); free((yyvsp[-2].sVal)); }
 #line 1483 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 178 "winprefsyacc.y" /* yacc.c:1646  */
+#line 178 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddMenuLine((yyvsp[-3].sVal), CMD_RELOAD, ""); free((yyvsp[-3].sVal)); }
 #line 1489 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 185 "winprefsyacc.y" /* yacc.c:1646  */
+#line 185 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { OpenMenu((yyvsp[-1].sVal)); free((yyvsp[-1].sVal)); }
 #line 1495 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 185 "winprefsyacc.y" /* yacc.c:1646  */
+#line 185 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     {CloseMenu();}
 #line 1501 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 188 "winprefsyacc.y" /* yacc.c:1646  */
+#line 188 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddIconLine((yyvsp[-3].sVal), (yyvsp[-2].sVal)); free((yyvsp[-3].sVal)); free((yyvsp[-2].sVal)); }
 #line 1507 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 195 "winprefsyacc.y" /* yacc.c:1646  */
+#line 195 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     {OpenIcons();}
 #line 1513 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 38:
-#line 195 "winprefsyacc.y" /* yacc.c:1646  */
+#line 195 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     {CloseIcons();}
 #line 1519 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 198 "winprefsyacc.y" /* yacc.c:1646  */
+#line 198 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=STYLE_TOPMOST; }
 #line 1525 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 199 "winprefsyacc.y" /* yacc.c:1646  */
+#line 199 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=STYLE_MAXIMIZE; }
 #line 1531 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 200 "winprefsyacc.y" /* yacc.c:1646  */
+#line 200 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=STYLE_MINIMIZE; }
 #line 1537 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 201 "winprefsyacc.y" /* yacc.c:1646  */
+#line 201 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=STYLE_BOTTOM; }
 #line 1543 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 204 "winprefsyacc.y" /* yacc.c:1646  */
+#line 204 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=STYLE_NOTITLE; }
 #line 1549 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 205 "winprefsyacc.y" /* yacc.c:1646  */
+#line 205 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=STYLE_OUTLINE; }
 #line 1555 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 206 "winprefsyacc.y" /* yacc.c:1646  */
+#line 206 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=STYLE_NOFRAME; }
 #line 1561 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 209 "winprefsyacc.y" /* yacc.c:1646  */
+#line 209 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=(yyvsp[0].uVal); }
 #line 1567 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 210 "winprefsyacc.y" /* yacc.c:1646  */
+#line 210 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=(yyvsp[0].uVal); }
 #line 1573 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 211 "winprefsyacc.y" /* yacc.c:1646  */
+#line 211 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=(yyvsp[-1].uVal)|(yyvsp[0].uVal); }
 #line 1579 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 212 "winprefsyacc.y" /* yacc.c:1646  */
+#line 212 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.uVal)=(yyvsp[-1].uVal)|(yyvsp[0].uVal); }
 #line 1585 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 215 "winprefsyacc.y" /* yacc.c:1646  */
+#line 215 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddStyleLine((yyvsp[-3].sVal), (yyvsp[-2].uVal)); free((yyvsp[-3].sVal)); }
 #line 1591 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 222 "winprefsyacc.y" /* yacc.c:1646  */
+#line 222 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     {OpenStyles();}
 #line 1597 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 222 "winprefsyacc.y" /* yacc.c:1646  */
+#line 222 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     {CloseStyles();}
 #line 1603 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 225 "winprefsyacc.y" /* yacc.c:1646  */
+#line 225 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.iVal)=AT_END; }
 #line 1609 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 226 "winprefsyacc.y" /* yacc.c:1646  */
+#line 226 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.iVal)=AT_START; }
 #line 1615 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 227 "winprefsyacc.y" /* yacc.c:1646  */
+#line 227 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { (yyval.iVal)=AT_END; }
 #line 1621 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 230 "winprefsyacc.y" /* yacc.c:1646  */
+#line 230 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { AddSysMenuLine((yyvsp[-4].sVal), (yyvsp[-3].sVal), (yyvsp[-2].iVal)); free((yyvsp[-4].sVal)); free((yyvsp[-3].sVal)); }
 #line 1627 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 61:
-#line 237 "winprefsyacc.y" /* yacc.c:1646  */
+#line 237 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     {OpenSysMenu();}
 #line 1633 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 237 "winprefsyacc.y" /* yacc.c:1646  */
+#line 237 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     {CloseSysMenu();}
 #line 1639 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 240 "winprefsyacc.y" /* yacc.c:1646  */
+#line 240 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { pref.fForceExit = TRUE; }
 #line 1645 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 243 "winprefsyacc.y" /* yacc.c:1646  */
+#line 243 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { pref.fSilentExit = TRUE; }
 #line 1651 "winprefsyacc.c" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 246 "winprefsyacc.y" /* yacc.c:1646  */
+#line 246 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1646  */
     { ErrorF("LoadPreferences: %s\n", (yyvsp[-1].sVal)); free((yyvsp[-1].sVal)); }
 #line 1657 "winprefsyacc.c" /* yacc.c:1646  */
     break;
@@ -1885,7 +1885,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 250 "winprefsyacc.y" /* yacc.c:1906  */
+#line 250 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1906  */
 
 /*
  * Errors in parsing abort and print log messages
