@@ -649,8 +649,8 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "winprefslex.l"
-#line 2 "winprefslex.l"
+#line 1 "../../../hw/xwin/winprefslex.l"
+#line 2 "../../../hw/xwin/winprefslex.l"
 /*
  * Copyright (C) 1994-2000 The XFree86 Project, Inc. All Rights Reserved.
  * Copyright (C) Colin Harrison 2005-2008
@@ -920,7 +920,7 @@ YY_DECL
 		}
 
 	{
-#line 65 "winprefslex.l"
+#line 65 "../../../hw/xwin/winprefslex.l"
 
 #line 926 "winprefslex.c"
 
@@ -988,177 +988,177 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 66 "winprefslex.l"
+#line 66 "../../../hw/xwin/winprefslex.l"
 { /* comment */ return NEWLINE; }
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 67 "winprefslex.l"
+#line 67 "../../../hw/xwin/winprefslex.l"
 { /* comment */ return NEWLINE; }
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 68 "winprefslex.l"
+#line 68 "../../../hw/xwin/winprefslex.l"
 { return NEWLINE; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 69 "winprefslex.l"
+#line 69 "../../../hw/xwin/winprefslex.l"
 { /* ignore whitespace */ }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 70 "winprefslex.l"
+#line 70 "../../../hw/xwin/winprefslex.l"
 { return MENU; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 71 "winprefslex.l"
+#line 71 "../../../hw/xwin/winprefslex.l"
 { return ICONDIRECTORY; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 72 "winprefslex.l"
+#line 72 "../../../hw/xwin/winprefslex.l"
 { return DEFAULTICON; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 73 "winprefslex.l"
+#line 73 "../../../hw/xwin/winprefslex.l"
 { return ICONS; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 74 "winprefslex.l"
+#line 74 "../../../hw/xwin/winprefslex.l"
 { return STYLES; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 75 "winprefslex.l"
+#line 75 "../../../hw/xwin/winprefslex.l"
 { return TOPMOST; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 76 "winprefslex.l"
+#line 76 "../../../hw/xwin/winprefslex.l"
 { return MAXIMIZE; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 77 "winprefslex.l"
+#line 77 "../../../hw/xwin/winprefslex.l"
 { return MINIMIZE; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 78 "winprefslex.l"
+#line 78 "../../../hw/xwin/winprefslex.l"
 { return BOTTOM; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 79 "winprefslex.l"
+#line 79 "../../../hw/xwin/winprefslex.l"
 { return NOTITLE; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 80 "winprefslex.l"
+#line 80 "../../../hw/xwin/winprefslex.l"
 { return OUTLINE; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 81 "winprefslex.l"
+#line 81 "../../../hw/xwin/winprefslex.l"
 { return NOFRAME; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 82 "winprefslex.l"
+#line 82 "../../../hw/xwin/winprefslex.l"
 { return ROOTMENU; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 83 "winprefslex.l"
+#line 83 "../../../hw/xwin/winprefslex.l"
 { return DEFAULTSYSMENU; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 84 "winprefslex.l"
+#line 84 "../../../hw/xwin/winprefslex.l"
 { return SYSMENU; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 85 "winprefslex.l"
+#line 85 "../../../hw/xwin/winprefslex.l"
 { return SEPARATOR; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 86 "winprefslex.l"
+#line 86 "../../../hw/xwin/winprefslex.l"
 { return ATSTART; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 87 "winprefslex.l"
+#line 87 "../../../hw/xwin/winprefslex.l"
 { return ATEND; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 88 "winprefslex.l"
+#line 88 "../../../hw/xwin/winprefslex.l"
 { return EXEC; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 89 "winprefslex.l"
+#line 89 "../../../hw/xwin/winprefslex.l"
 { return ALWAYSONTOP; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 90 "winprefslex.l"
+#line 90 "../../../hw/xwin/winprefslex.l"
 { return DEBUGOUTPUT; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 91 "winprefslex.l"
+#line 91 "../../../hw/xwin/winprefslex.l"
 { return RELOAD; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 92 "winprefslex.l"
+#line 92 "../../../hw/xwin/winprefslex.l"
 { return TRAYICON; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 93 "winprefslex.l"
+#line 93 "../../../hw/xwin/winprefslex.l"
 { return FORCEEXIT; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 94 "winprefslex.l"
+#line 94 "../../../hw/xwin/winprefslex.l"
 { return SILENTEXIT; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 95 "winprefslex.l"
+#line 95 "../../../hw/xwin/winprefslex.l"
 { return LB; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 96 "winprefslex.l"
+#line 96 "../../../hw/xwin/winprefslex.l"
 { return RB; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 97 "winprefslex.l"
+#line 97 "../../../hw/xwin/winprefslex.l"
 { yylval.sVal = makestr(yytext+1); \
                           yylval.sVal[strlen(yylval.sVal)-1] = 0; \
                           return STRING; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 100 "winprefslex.l"
+#line 100 "../../../hw/xwin/winprefslex.l"
 { yylval.sVal = makestr(yytext); \
                           return STRING; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 102 "winprefslex.l"
+#line 102 "../../../hw/xwin/winprefslex.l"
 ECHO;
 	YY_BREAK
 #line 1165 "winprefslex.c"
@@ -2128,7 +2128,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 102 "winprefslex.l"
+#line 101 "../../../hw/xwin/winprefslex.l"
 
 
 

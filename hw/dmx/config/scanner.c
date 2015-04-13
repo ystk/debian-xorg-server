@@ -8,7 +8,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 35
+#define YY_FLEX_SUBMINOR_VERSION 39
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -161,7 +161,12 @@ typedef unsigned int flex_uint32_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
-extern int yyleng;
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
+extern yy_size_t yyleng;
 
 extern FILE *yyin, *yyout;
 
@@ -170,6 +175,7 @@ extern FILE *yyin, *yyout;
 #define EOB_ACT_LAST_MATCH 2
 
     #define YY_LESS_LINENO(n)
+    #define YY_LINENO_REWIND_TO(ptr)
     
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
@@ -186,11 +192,6 @@ extern FILE *yyin, *yyout;
 	while ( 0 )
 
 #define unput(c) yyunput( c, (yytext_ptr)  )
-
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
-#endif
 
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
@@ -209,7 +210,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	int yy_n_chars;
+	yy_size_t yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -279,8 +280,8 @@ static YY_BUFFER_STATE * yy_buffer_stack = 0; /**< Stack as an array. */
 
 /* yy_hold_char holds the character lost when yytext is formed. */
 static char yy_hold_char;
-static int yy_n_chars;		/* number of characters read into yy_ch_buf */
-int yyleng;
+static yy_size_t yy_n_chars;		/* number of characters read into yy_ch_buf */
+yy_size_t yyleng;
 
 /* Points to current character in buffer. */
 static char *yy_c_buf_p = (char *) 0;
@@ -308,7 +309,7 @@ static void yy_init_buffer (YY_BUFFER_STATE b,FILE *file  );
 
 YY_BUFFER_STATE yy_scan_buffer (char *base,yy_size_t size  );
 YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str  );
-YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,int len  );
+YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,yy_size_t len  );
 
 void *yyalloc (yy_size_t  );
 void *yyrealloc (void *,yy_size_t  );
@@ -504,7 +505,7 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "scanner.l"
+#line 1 "../../../../hw/dmx/config/scanner.l"
 /* $XFree86$ */
 /*
  * Copyright 2002 Red Hat Inc., Durham, North Carolina.
@@ -537,7 +538,7 @@ char *yytext;
  *   Rickard E. (Rik) Faith <faith@redhat.com>
  *
  */
-#line 36 "scanner.l"
+#line 36 "../../../../hw/dmx/config/scanner.l"
 #ifdef HAVE_DMX_CONFIG_H
 #include <dmx-config.h>
 #endif
@@ -554,7 +555,7 @@ static int gettoken(int token, const char *text, int leng);
 static int getcomment(int token, const char *text, int leng);
 static int lineno = 1;
 
-#line 558 "scanner.c"
+#line 559 "scanner.c"
 
 #define INITIAL 0
 #define OTHER 1
@@ -594,7 +595,7 @@ FILE *yyget_out (void );
 
 void yyset_out  (FILE * out_str  );
 
-int yyget_leng (void );
+yy_size_t yyget_leng (void );
 
 char *yyget_text (void );
 
@@ -745,10 +746,6 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 63 "scanner.l"
-
-#line 751 "scanner.c"
-
 	if ( !(yy_init) )
 		{
 		(yy_init) = 1;
@@ -775,6 +772,11 @@ YY_DECL
 		yy_load_buffer_state( );
 		}
 
+	{
+#line 63 "../../../../hw/dmx/config/scanner.l"
+
+#line 779 "scanner.c"
+
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
 		yy_cp = (yy_c_buf_p);
@@ -792,7 +794,7 @@ YY_DECL
 yy_match:
 		do
 			{
-			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)];
+			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
 			if ( yy_accept[yy_current_state] )
 				{
 				(yy_last_accepting_state) = yy_current_state;
@@ -833,111 +835,111 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 64 "scanner.l"
+#line 64 "../../../../hw/dmx/config/scanner.l"
 return gettoken(T_VIRTUAL, yytext, yyleng);
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 65 "scanner.l"
+#line 65 "../../../../hw/dmx/config/scanner.l"
 return gettoken(T_DISPLAY, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 66 "scanner.l"
+#line 66 "../../../../hw/dmx/config/scanner.l"
 return gettoken(T_WALL, yytext, yyleng);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 67 "scanner.l"
+#line 67 "../../../../hw/dmx/config/scanner.l"
 return gettoken(T_OPTION, yytext, yyleng);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 68 "scanner.l"
+#line 68 "../../../../hw/dmx/config/scanner.l"
 return gettoken(T_PARAM, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 69 "scanner.l"
+#line 69 "../../../../hw/dmx/config/scanner.l"
 return getdimension(T_DIMENSION, yytext, yyleng);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 70 "scanner.l"
+#line 70 "../../../../hw/dmx/config/scanner.l"
 return getdimension(T_OFFSET, yytext+1, yyleng-1);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 71 "scanner.l"
+#line 71 "../../../../hw/dmx/config/scanner.l"
 return getdimension(T_ORIGIN, yytext+1, yyleng-1);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 72 "scanner.l"
+#line 72 "../../../../hw/dmx/config/scanner.l"
 return getstring(T_STRING, yytext, yyleng);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 73 "scanner.l"
+#line 73 "../../../../hw/dmx/config/scanner.l"
 return getstring(T_STRING, yytext+1, yyleng-2);
 	YY_BREAK
 case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
-#line 74 "scanner.l"
+#line 74 "../../../../hw/dmx/config/scanner.l"
 ++lineno;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 75 "scanner.l"
+#line 75 "../../../../hw/dmx/config/scanner.l"
 
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 76 "scanner.l"
+#line 76 "../../../../hw/dmx/config/scanner.l"
 return gettoken(yytext[0], yytext, yyleng);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 77 "scanner.l"
+#line 77 "../../../../hw/dmx/config/scanner.l"
 return gettoken(yytext[0], yytext, yyleng);
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 78 "scanner.l"
+#line 78 "../../../../hw/dmx/config/scanner.l"
 return gettoken(yytext[0], yytext, yyleng);
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 79 "scanner.l"
+#line 79 "../../../../hw/dmx/config/scanner.l"
 return gettoken(yytext[0], yytext, yyleng);
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 80 "scanner.l"
+#line 80 "../../../../hw/dmx/config/scanner.l"
 return getcomment(T_LINE_COMMENT, yytext, yyleng);
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 81 "scanner.l"
+#line 81 "../../../../hw/dmx/config/scanner.l"
 return getcomment(T_COMMENT, yytext, yyleng);
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 82 "scanner.l"
+#line 82 "../../../../hw/dmx/config/scanner.l"
 return getstring(T_STRING, yytext, yyleng);
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(OTHER):
-#line 83 "scanner.l"
+#line 83 "../../../../hw/dmx/config/scanner.l"
 return 0;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 84 "scanner.l"
+#line 84 "../../../../hw/dmx/config/scanner.l"
 ECHO;
 	YY_BREAK
-#line 941 "scanner.c"
+#line 943 "scanner.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1066,6 +1068,7 @@ ECHO;
 			"fatal flex scanner internal error--no action found" );
 	} /* end of action switch */
 		} /* end of scanning one token */
+	} /* end of user's declarations */
 } /* end of yylex */
 
 /* yy_get_next_buffer - try to read in a new buffer
@@ -1121,21 +1124,21 @@ static int yy_get_next_buffer (void)
 
 	else
 		{
-			int num_to_read =
+			yy_size_t num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
 			{ /* Not enough room in the buffer - grow it. */
 
 			/* just a shorter name for the current buffer */
-			YY_BUFFER_STATE b = YY_CURRENT_BUFFER;
+			YY_BUFFER_STATE b = YY_CURRENT_BUFFER_LVALUE;
 
 			int yy_c_buf_p_offset =
 				(int) ((yy_c_buf_p) - b->yy_ch_buf);
 
 			if ( b->yy_is_our_buffer )
 				{
-				int new_size = b->yy_buf_size * 2;
+				yy_size_t new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1166,7 +1169,7 @@ static int yy_get_next_buffer (void)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			(yy_n_chars), (size_t) num_to_read );
+			(yy_n_chars), num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars);
 		}
@@ -1262,7 +1265,7 @@ static int yy_get_next_buffer (void)
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 	yy_is_jam = (yy_current_state == 72);
 
-	return yy_is_jam ? 0 : yy_current_state;
+		return yy_is_jam ? 0 : yy_current_state;
 }
 
     static void yyunput (int c, register char * yy_bp )
@@ -1277,7 +1280,7 @@ static int yy_get_next_buffer (void)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		register int number_to_move = (yy_n_chars) + 2;
+		register yy_size_t number_to_move = (yy_n_chars) + 2;
 		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
 		register char *source =
@@ -1326,7 +1329,7 @@ static int yy_get_next_buffer (void)
 
 		else
 			{ /* need more input */
-			int offset = (yy_c_buf_p) - (yytext_ptr);
+			yy_size_t offset = (yy_c_buf_p) - (yytext_ptr);
 			++(yy_c_buf_p);
 
 			switch ( yy_get_next_buffer(  ) )
@@ -1488,10 +1491,6 @@ static void yy_load_buffer_state  (void)
 	yyfree((void *) b  );
 }
 
-#ifndef __cplusplus
-extern int isatty (int );
-#endif /* __cplusplus */
-    
 /* Initializes or reinitializes a buffer.
  * This function is sometimes called more than once on the same buffer,
  * such as during a yyrestart() or at EOF.
@@ -1604,7 +1603,7 @@ void yypop_buffer_state (void)
  */
 static void yyensure_buffer_stack (void)
 {
-	int num_to_alloc;
+	yy_size_t num_to_alloc;
     
 	if (!(yy_buffer_stack)) {
 
@@ -1701,12 +1700,12 @@ YY_BUFFER_STATE yy_scan_string (yyconst char * yystr )
  * 
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, int  _yybytes_len )
+YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len )
 {
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	int i;
+	yy_size_t i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -1788,7 +1787,7 @@ FILE *yyget_out  (void)
 /** Get the length of the current token.
  * 
  */
-int yyget_leng  (void)
+yy_size_t yyget_leng  (void)
 {
         return yyleng;
 }
@@ -1936,7 +1935,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 84 "scanner.l"
+#line 83 "../../../../hw/dmx/config/scanner.l"
 
 
 int yywrap(void)

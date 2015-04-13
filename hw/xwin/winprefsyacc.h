@@ -112,7 +112,7 @@ extern int yydebug;
 typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 89 "winprefsyacc.y" /* yacc.c:1909  */
+#line 89 "../../../hw/xwin/winprefsyacc.y" /* yacc.c:1909  */
 
   char *sVal;
   unsigned long uVal;
