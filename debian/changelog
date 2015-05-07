@@ -1,3 +1,21 @@
+xorg-server (2:1.7.7-18+deb6u3) squeeze-lts; urgency=medium
+
+  * Non-maintainer upload by Debian LTS Team.
+  * debian/patches:
+    + Add 31-CVE-2015-3418.patch. (Closes: #774308).
+      dix: Allow zero-height PutImage requests, fixes CVE-2015-3418.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 01 May 2015 12:00:10 +0200
+
+xorg-server (2:1.7.7-18+deb6u2) squeeze-lts; urgency=high
+
+  * Non-maintainer upload by Debian LTS Team.
+  * debian/patches:
+    + Add 30-CVE-2015-0255.patch. Don't swap XkbSetGeometry data in the
+      input buffer, check strings length against request size (CVE-2015-0255).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 22 Apr 2015 11:45:21 +0200
+
 xorg-server (2:1.7.7-18+deb6u1) squeeze-lts; urgency=high
 
   * Non-maintainer upload by the Debian LTS Team.

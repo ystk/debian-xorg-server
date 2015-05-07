@@ -56,3 +56,5 @@
 29-CVE-2014-8098_8.diff
 29-CVE-2014-8093_6.diff
 #29-CVE-2014-8098_9.diff # no glx/clientinfo.c in version 1.7.7
+30-CVE-2015-0255.patch
+31-CVE-2015-3418.patch
