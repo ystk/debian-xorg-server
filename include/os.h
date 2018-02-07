@@ -451,10 +451,27 @@ extern _X_EXPORT void
 ResetHosts(const char *display);
 
 extern _X_EXPORT void
+EnableLocalAccess(void);
+
+extern _X_EXPORT void
+DisableLocalAccess(void);
+
+extern _X_EXPORT void
 EnableLocalHost(void);
 
 extern _X_EXPORT void
 DisableLocalHost(void);
+
+#ifndef NO_LOCAL_CLIENT_CRED
+extern _X_EXPORT void
+EnableLocalUser(void);
+
+extern _X_EXPORT void
+DisableLocalUser(void);
+
+extern _X_EXPORT void
+LocalAccessScopeUser(void);
+#endif
 
 extern _X_EXPORT void
 AccessUsingXdmcp(void);
@@ -577,6 +594,11 @@ strlcat(char *dst, const char *src, size_t siz);
 #ifndef HAVE_STRNDUP
 extern _X_EXPORT char *
 strndup(const char *str, size_t n);
+#endif
+
+#ifndef HAVE_TIMINGSAFE_MEMCMP
+extern _X_EXPORT int
+timingsafe_memcmp(const void *b1, const void *b2, size_t len);
 #endif
 
 /* Logging. */
