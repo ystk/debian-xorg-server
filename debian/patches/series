@@ -6,3 +6,11 @@
 05_Revert-Unload-submodules.diff
 08_xfree86_fix_ia64_inx_outx.diff
 09_Xserver-man-iglx.diff
+
+CVE-2020-14345.patch
+CVE-2020-14346.patch
+CVE-2020-14347.patch
+CVE-2020-14361.patch
+CVE-2020-14362.patch
+CVE-2020-14360.patch
+CVE-2020-25712.patch

@@ -1,3 +1,29 @@
+xorg-server (2:1.16.4-1+deb8u4) jessie-security; urgency=medium
+
+  * CVE-2020-14360: buffer overflow on XkbSetMap.
+  * CVE-2020-25712: heap buffer overflows on XkbSetDeviceInfo and
+    SetDeviceIndicators.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Wed, 02 Dec 2020 12:42:46 +0100
+
+xorg-server (2:1.16.4-1+deb8u3) jessie-security; urgency=high
+
+  * Non-maintainer upload by the ELTS Team.
+  * CVE-2020-14345 
+    Out-Of-Bounds access in the handler for the XkbSetNames requests 
+  * CVE-2020-14346 
+    integer underflow in the handler for the XIChangeHierarchy request
+  * CVE-2020-14347
+    leak of uninitialize heap memory to clients which might lead to 
+    privilege elevation in the client
+  * CVE-2020-14361 
+    integer underflow in the handler for the XkbSelectEvents request
+  * CVE-2020-14362
+    integer underflow in the handler for the CreateRegister request of 
+    the X record extension.
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Sun, 30 Aug 2020 17:03:02 +0200
+
 xorg-server (2:1.16.4-1+deb8u2) jessie-security; urgency=high
 
   * render: Fix out of boundary heap access
