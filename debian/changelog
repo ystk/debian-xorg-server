@@ -1,3 +1,14 @@
+xorg-server (2:1.16.4-1+deb8u5) jessie-security; urgency=high
+
+  * Non-maintainer upload by the ELTS Team.
+  * CVE-2021-3472: Fix an input validation failure in the XInput extension.
+    Insufficient checks on the lengths of the XInput extension's
+    ChangeFeedbackControl request could have lead to out of bounds memory
+    accesses in the X server. These issues can lead to privilege escalation for
+    authorised clients on systems where the X server is running privileged.
+
+ -- Chris Lamb <lamby@debian.org>  Thu, 15 Apr 2021 11:28:40 +0100
+
 xorg-server (2:1.16.4-1+deb8u4) jessie-security; urgency=medium
 
   * CVE-2020-14360: buffer overflow on XkbSetMap.
