@@ -1,3 +1,10 @@
+xorg-server (2:1.16.4-1+deb8u7) jessie-security; urgency=medium
+
+  * CVE-2022-2319: out of bounds write in ProcXkbSetGeometry.
+  * CVE-2022-2320: out of bounds write in ProcXkbSetDeviceInfo.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Tue, 26 Jul 2022 14:16:08 +0200
+
 xorg-server (2:1.16.4-1+deb8u6) jessie-security; urgency=high
 
   * Non-maintainer upload by the ELTS Team.
