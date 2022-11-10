@@ -1,3 +1,10 @@
+xorg-server (2:1.16.4-1+deb8u8) jessie-security; urgency=medium
+
+  * xkb: proof GetCountedString against request length attacks (CVE-2022-3550)
+  * xkb: fix some possible memleaks in XkbGetKbdByName (CVE-2022-3551)
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Thu, 10 Nov 2022 16:21:11 +0100
+
 xorg-server (2:1.16.4-1+deb8u7) jessie-security; urgency=medium
 
   * CVE-2022-2319: out of bounds write in ProcXkbSetGeometry.
