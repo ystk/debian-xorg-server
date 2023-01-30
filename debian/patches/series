@@ -24,3 +24,12 @@ CVE-2022-2319.patch
 CVE-2022-2320.patch
 CVE-2022-3550.patch
 CVE-2022-3551.patch
+
+33_Xtest-disallow-GenericEvents-in-XTestSwapFakeInput.patch
+34_Xi-disallow-passive-grabs-with-a-detail-255.patch
+35_Xext-free-the-XvRTVideoNotify-when-turning-off-from-.patch
+36_Xext-free-the-screen-saver-resource-when-replacing-i.patch
+37_Xi-return-an-error-from-XI-property-changes-if-verif.patch
+38_Xi-avoid-integer-truncation-in-length-check-of-ProcX.patch
+39_xkb-reset-the-radio_groups-pointer-to-NULL-after-fre.patch
+

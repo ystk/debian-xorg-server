@@ -1,0 +1,70 @@
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Tue, 29 Nov 2022 13:26:57 +1000
+Subject: Xi: avoid integer truncation in length check of ProcXIChangeProperty
+Origin: https://gitlab.freedesktop.org/xorg/xserver/commit/8a1fa008b2f90abce6cabb27d9bc2ed76d07b678
+Bug-Debian-Security: https://security-tracker.debian.org/tracker/CVE-2022-46344
+Bug-Debian: https://bugs.debian.org/1026071
+
+This fixes an OOB read and the resulting information disclosure.
+
+Length calculation for the request was clipped to a 32-bit integer. With
+the correct stuff->num_items value the expected request size was
+truncated, passing the REQUEST_FIXED_SIZE check.
+
+The server then proceeded with reading at least stuff->num_items bytes
+(depending on stuff->format) from the request and stuffing whatever it
+finds into the property. In the process it would also allocate at least
+stuff->num_items bytes, i.e. 4GB.
+
+The same bug exists in ProcChangeProperty and ProcXChangeDeviceProperty,
+so let's fix that too.
+
+CVE-2022-46344, ZDI-CAN 19405
+
+This vulnerability was discovered by:
+Jan-Niklas Sohn working with Trend Micro Zero Day Initiative
+
+Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+Acked-by: Olivier Fourdan <ofourdan@redhat.com>
+(cherry picked from commit 8f454b793e1f13c99872c15f0eed1d7f3b823fe8)
+---
+ Xi/xiproperty.c | 4 ++--
+ dix/property.c  | 3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+Index: xorg-server-1.16.4/Xi/xiproperty.c
+===================================================================
+--- xorg-server-1.16.4.orig/Xi/xiproperty.c	2023-01-29 11:26:40.996054651 +0100
++++ xorg-server-1.16.4/Xi/xiproperty.c	2023-01-29 11:26:40.992054664 +0100
+@@ -888,7 +888,7 @@
+     REQUEST(xChangeDevicePropertyReq);
+     DeviceIntPtr dev;
+     unsigned long len;
+-    int totalSize;
++    uint64_t totalSize;
+     int rc;
+ 
+     REQUEST_AT_LEAST_SIZE(xChangeDevicePropertyReq);
+@@ -1128,7 +1128,7 @@
+ {
+     int rc;
+     DeviceIntPtr dev;
+-    int totalSize;
++    uint64_t totalSize;
+     unsigned long len;
+ 
+     REQUEST(xXIChangePropertyReq);
+Index: xorg-server-1.16.4/dix/property.c
+===================================================================
+--- xorg-server-1.16.4.orig/dix/property.c	2023-01-29 11:26:40.996054651 +0100
++++ xorg-server-1.16.4/dix/property.c	2023-01-29 11:26:40.992054664 +0100
+@@ -194,7 +194,8 @@
+     WindowPtr pWin;
+     char format, mode;
+     unsigned long len;
+-    int sizeInBytes, totalSize, err;
++    int sizeInBytes, err;
++    uint64_t totalSize;
+ 
+     REQUEST(xChangePropertyReq);
+ 

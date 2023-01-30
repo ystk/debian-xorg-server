@@ -1,3 +1,22 @@
+xorg-server (2:1.16.4-1+deb8u9) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the ELTS Team.
+  * CVE-2022-46340
+    Xtest: disallow GenericEvents in XTestSwapFakeInput
+  * CVE-2022-46341
+    Xi: disallow passive grabs with a detail > 255
+  * CVE-2022-46342
+    Xext: free the XvRTVideoNotify when turning off from the same client
+  * CVE-2022-46343
+    Xext: free the screen saver resource when replacing it
+  * CVE-2022-46344
+    Xi: avoid integer truncation in length check of ProcXIChangeProperty
+  * CVE-2022-4283
+    xkb: reset the radio_groups pointer to NULL after freeing it
+  * Xi: return an error from XI property changes if verification failed
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Sun, 29 Jan 2023 10:03:02 +0100
+
 xorg-server (2:1.16.4-1+deb8u8) jessie-security; urgency=medium
 
   * xkb: proof GetCountedString against request length attacks (CVE-2022-3550)
