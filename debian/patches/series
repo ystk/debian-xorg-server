@@ -33,3 +33,4 @@ CVE-2022-3551.patch
 38_Xi-avoid-integer-truncation-in-length-check-of-ProcX.patch
 39_xkb-reset-the-radio_groups-pointer-to-NULL-after-fre.patch
 
+40_Xi-fix-potential-use-after-free-in-DeepCopyPointerCl.patch 

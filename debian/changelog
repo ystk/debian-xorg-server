@@ -1,3 +1,11 @@
+xorg-server (2:1.16.4-1+deb8u10) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the LTS Team.
+  * CVE-2023-0494
+    potential use-after-free in DeepCopyPointerClasses
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Sun, 05 Feb 2023 22:03:02 +0100
+
 xorg-server (2:1.16.4-1+deb8u9) jessie-security; urgency=medium
 
   * Non-maintainer upload by the ELTS Team.
