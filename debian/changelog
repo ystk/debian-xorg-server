@@ -1,3 +1,11 @@
+xorg-server (2:1.16.4-1+deb8u11) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the ELTS Team.
+  * CVE-2023-1393
+    Fix use-after-free of the COW.
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Tue, 28 Mar 2023 19:03:02 +0200
+
 xorg-server (2:1.16.4-1+deb8u10) jessie-security; urgency=medium
 
   * Non-maintainer upload by the LTS Team.
