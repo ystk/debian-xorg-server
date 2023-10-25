@@ -36,3 +36,7 @@ CVE-2022-3551.patch
 40_Xi-fix-potential-use-after-free-in-DeepCopyPointerCl.patch 
 
 41_Overlay_Window_Use-After-Free.patch
+
+42-Xi-randr-fix-handling-of-PropModeAppend-Prepend.patch
+43-mi-reset-the-PointerWindows-reference-on-screen-swit.patch
+
