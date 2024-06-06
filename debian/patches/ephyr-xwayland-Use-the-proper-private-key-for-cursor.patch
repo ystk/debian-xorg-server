@@ -1,0 +1,21 @@
+From: Markus Koschany <apo@debian.org>
+Date: Thu, 1 Feb 2024 16:32:07 +0100
+Subject: ephyr-xwayland-Use-the-proper-private-key-for-cursor
+
+---
+ hw/xwayland/xwayland-cursor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xwayland/xwayland-cursor.c b/hw/xwayland/xwayland-cursor.c
+index 5a9d1fe..755e02f 100644
+--- a/hw/xwayland/xwayland-cursor.c
++++ b/hw/xwayland/xwayland-cursor.c
+@@ -184,7 +184,7 @@ static miPointerScreenFuncRec xwl_pointer_screen_funcs = {
+ Bool
+ xwl_screen_init_cursor(struct xwl_screen *xwl_screen)
+ {
+-    if (!dixRegisterPrivateKey(&xwl_cursor_private_key, PRIVATE_CURSOR_BITS, 0))
++    if (!dixRegisterPrivateKey(&xwl_cursor_private_key, PRIVATE_CURSOR, 0))
+         return FALSE;
+ 
+     return miPointerInitialize(xwl_screen->screen,

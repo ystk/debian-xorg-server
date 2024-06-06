@@ -1,0 +1,93 @@
+From 32274c4f9acf90d257e35663be96a53f277f0e57 Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Tue, 30 Jan 2024 13:13:35 +1000
+Subject: render: fix refcounting of glyphs during ProcRenderAddGlyphs
+
+Previously, AllocateGlyph would return a new glyph with refcount=0 and a
+re-used glyph would end up not changing the refcount at all. The
+resulting glyph_new array would thus have multiple entries pointing to
+the same non-refcounted glyphs.
+
+AddGlyph may free a glyph, resulting in a UAF when the same glyph
+pointer is then later used.
+
+Fix this by returning a refcount of 1 for a new glyph and always
+incrementing the refcount for a re-used glyph, followed by dropping that
+refcount back down again when we're done with it.
+
+CVE-2024-31083, ZDI-CAN-22880
+
+This vulnerability was discovered by:
+Jan-Niklas Sohn working with Trend Micro Zero Day Initiative
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/1463>
+---
+ render/glyph.c  |  3 ++-
+ render/render.c | 15 +++++++++++----
+ 2 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/render/glyph.c b/render/glyph.c
+index ae3812171..f9f0d7eec 100644
+--- a/render/glyph.c
++++ b/render/glyph.c
+@@ -249,6 +249,7 @@ void
+ FreeGlyph(GlyphPtr glyph, int format)
+ {
+     CheckDuplicates(&globalGlyphs[format], "FreeGlyph");
++    BUG_RETURN(glyph->refcnt == 0);
+     if (--glyph->refcnt == 0) {
+         GlyphRefPtr gr;
+         int i;
+@@ -354,7 +355,7 @@ AllocateGlyph(xGlyphInfo * gi, int fdepth)
+     glyph = (GlyphPtr) malloc(size);
+     if (!glyph)
+         return 0;
+-    glyph->refcnt = 0;
++    glyph->refcnt = 1;
+     glyph->size = size + sizeof(xGlyphInfo);
+     glyph->info = *gi;
+     dixInitPrivates(glyph, (char *) glyph + head_size, PRIVATE_GLYPH);
+diff --git a/render/render.c b/render/render.c
+index 7dba737eb..33c0d76bc 100644
+--- a/render/render.c
++++ b/render/render.c
+@@ -1089,6 +1089,7 @@ ProcRenderAddGlyphs(ClientPtr client)
+ 
+         if (glyph_new->glyph && glyph_new->glyph != DeletedGlyph) {
+             glyph_new->found = TRUE;
++            ++glyph_new->glyph->refcnt;
+         }
+         else {
+             GlyphPtr glyph;
+@@ -1181,8 +1182,10 @@ ProcRenderAddGlyphs(ClientPtr client)
+         err = BadAlloc;
+         goto bail;
+     }
+-    for (i = 0; i < nglyphs; i++)
++    for (i = 0; i < nglyphs; i++) {
+         AddGlyph(glyphSet, glyphs[i].glyph, glyphs[i].id);
++        FreeGlyph(glyphs[i].glyph, glyphSet->fdepth);
++    }
+ 
+     if (glyphsBase != glyphsLocal)
+         free(glyphsBase);
+@@ -1192,9 +1195,13 @@ ProcRenderAddGlyphs(ClientPtr client)
+         FreePicture((void *) pSrc, 0);
+     if (pSrcPix)
+         FreeScratchPixmapHeader(pSrcPix);
+-    for (i = 0; i < nglyphs; i++)
+-        if (glyphs[i].glyph && !glyphs[i].found)
+-            free(glyphs[i].glyph);
++    for (i = 0; i < nglyphs; i++) {
++        if (glyphs[i].glyph) {
++            --glyphs[i].glyph->refcnt;
++            if (!glyphs[i].found)
++                free(glyphs[i].glyph);
++        }
++    }
+     if (glyphsBase != glyphsLocal)
+         free(glyphsBase);
+     return err;
+-- 
+2.30.2
+

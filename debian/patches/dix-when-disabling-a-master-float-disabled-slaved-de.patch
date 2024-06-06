@@ -1,0 +1,38 @@
+From: Markus Koschany <apo@debian.org>
+Date: Thu, 1 Feb 2024 14:31:07 +0100
+Subject: dix-when-disabling-a-master-float-disabled-slaved-de
+
+---
+ dix/devices.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/dix/devices.c b/dix/devices.c
+index c0b7b7e..8745602 100644
+--- a/dix/devices.c
++++ b/dix/devices.c
+@@ -472,6 +472,13 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
+                 flags[other->id] |= XISlaveDetached;
+             }
+         }
++
++        for (other = inputInfo.off_devices; other; other = other->next) {
++            if (!IsMaster(other) && GetMaster(other, MASTER_ATTACHED) == dev) {
++                AttachDevice(NULL, other, NULL);
++                flags[other->id] |= XISlaveDetached;
++            }
++        }
+     }
+     else {
+         for (other = inputInfo.devices; other; other = other->next) {
+@@ -1049,6 +1056,11 @@ CloseDownDevices(void)
+             dev->master = NULL;
+     }
+ 
++    for (dev = inputInfo.off_devices; dev; dev = dev->next) {
++        if (!IsMaster(dev) && !IsFloating(dev))
++            dev->master = NULL;
++    }
++
+     CloseDeviceList(&inputInfo.devices);
+     CloseDeviceList(&inputInfo.off_devices);
+ 

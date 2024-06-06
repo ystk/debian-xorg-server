@@ -1,0 +1,30 @@
+From: Markus Koschany <apo@debian.org>
+Date: Thu, 1 Feb 2024 13:12:10 +0100
+Subject: Xi-require-a-pointer-and-keyboard-device-for-XIAttac
+
+---
+ Xi/xichangehierarchy.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Xi/xichangehierarchy.c b/Xi/xichangehierarchy.c
+index f5d43b7..fe2f20a 100644
+--- a/Xi/xichangehierarchy.c
++++ b/Xi/xichangehierarchy.c
+@@ -269,7 +269,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
+         if (rc != Success)
+             goto unwind;
+ 
+-        if (!IsMaster(newptr)) {
++        if (!IsMaster(newptr) || !IsPointerDevice(newptr)) {
+             client->errorValue = r->return_pointer;
+             rc = BadDevice;
+             goto unwind;
+@@ -280,7 +280,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
+         if (rc != Success)
+             goto unwind;
+ 
+-        if (!IsMaster(newkeybd)) {
++        if (!IsMaster(newkeybd) || !IsKeyboardDevice(newkeybd)) {
+             client->errorValue = r->return_keyboard;
+             rc = BadDevice;
+             goto unwind;

@@ -1,0 +1,34 @@
+From: Markus Koschany <apo@debian.org>
+Date: Thu, 1 Feb 2024 17:44:07 +0100
+Subject: glx-Call-XACE-hooks-on-the-GLX-buffer
+
+---
+ glx/glxcmds.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/glx/glxcmds.c b/glx/glxcmds.c
+index 336a873..b9a9e4c 100644
+--- a/glx/glxcmds.c
++++ b/glx/glxcmds.c
+@@ -45,6 +45,7 @@
+ #include "indirect_dispatch.h"
+ #include "indirect_table.h"
+ #include "indirect_util.h"
++#include "xace.h"
+ 
+ static char GLXServerVendorName[] = "SGI";
+ 
+@@ -1437,6 +1438,13 @@ DoCreatePbuffer(ClientPtr client, int screenNum, XID fbconfigId,
+     if (!pPixmap)
+         return BadAlloc;
+ 
++    err = XaceHook(XACE_RESOURCE_ACCESS, client, glxDrawableId, RT_PIXMAP,
++                   pPixmap, RT_NONE, NULL, DixCreateAccess);
++    if (err != Success) {
++        (*pGlxScreen->pScreen->DestroyPixmap) (pPixmap);
++        return err;
++    }
++
+     /* Assign the pixmap the same id as the pbuffer and add it as a
+      * resource so it and the DRI2 drawable will be reclaimed when the
+      * pbuffer is destroyed. */

@@ -1,0 +1,39 @@
+From: Markus Koschany <apo@debian.org>
+Date: Thu, 1 Feb 2024 13:13:03 +0100
+Subject: dix-allocate-enough-space-for-logical-button-maps
+
+---
+ Xi/xiquerypointer.c | 3 +--
+ dix/enterleave.c    | 5 +++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Xi/xiquerypointer.c b/Xi/xiquerypointer.c
+index 7ec0c85..85ef8ab 100644
+--- a/Xi/xiquerypointer.c
++++ b/Xi/xiquerypointer.c
+@@ -149,8 +149,7 @@ ProcXIQueryPointer(ClientPtr client)
+     if (pDev->button) {
+         int i;
+ 
+-        rep.buttons_len =
+-            bytes_to_int32(bits_to_bytes(pDev->button->numButtons));
++        rep.buttons_len = bytes_to_int32(bits_to_bytes(256)); /* button map up to 255 */
+         rep.length += rep.buttons_len;
+         buttons_size = rep.buttons_len * 4;
+         buttons = calloc(1, buttons_size);
+diff --git a/dix/enterleave.c b/dix/enterleave.c
+index 54f4b85..ff7813b 100644
+--- a/dix/enterleave.c
++++ b/dix/enterleave.c
+@@ -784,8 +784,9 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
+ 
+     mouse = IsFloating(dev) ? dev : GetMaster(dev, MASTER_POINTER);
+ 
+-    /* XI 2 event */
+-    btlen = (mouse->button) ? bits_to_bytes(mouse->button->numButtons) : 0;
++    /* XI 2 event contains the logical button map - maps are CARD8
++     * so we need 256 bits for the possibly maximum mapping */
++    btlen = (mouse->button) ? bits_to_bytes(256) : 0;
+     btlen = bytes_to_int32(btlen);
+     len = sizeof(xXIFocusInEvent) + btlen * 4;
+ 

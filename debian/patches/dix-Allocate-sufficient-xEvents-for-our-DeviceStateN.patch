@@ -1,0 +1,39 @@
+From: Markus Koschany <apo@debian.org>
+Date: Thu, 1 Feb 2024 13:23:41 +0100
+Subject: dix-Allocate-sufficient-xEvents-for-our-DeviceStateN
+
+---
+ dix/enterleave.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/dix/enterleave.c b/dix/enterleave.c
+index ff7813b..0db9a0f 100644
+--- a/dix/enterleave.c
++++ b/dix/enterleave.c
+@@ -675,7 +675,8 @@ static void
+ DeliverStateNotifyEvent(DeviceIntPtr dev, WindowPtr win)
+ {
+     int evcount = 1;
+-    deviceStateNotify *ev, *sev;
++    deviceStateNotify sev[6 + (MAX_VALUATORS + 2)/3];
++    deviceStateNotify *ev;
+     deviceKeyStateNotify *kev;
+     deviceButtonStateNotify *bev;
+ 
+@@ -714,7 +715,7 @@ DeliverStateNotifyEvent(DeviceIntPtr dev, WindowPtr win)
+         }
+     }
+ 
+-    sev = ev = (deviceStateNotify *) malloc(evcount * sizeof(xEvent));
++    ev = sev;
+     FixDeviceStateNotify(dev, ev, NULL, NULL, NULL, first);
+ 
+     if (b != NULL) {
+@@ -770,7 +771,6 @@ DeliverStateNotifyEvent(DeviceIntPtr dev, WindowPtr win)
+ 
+     DeliverEventsToWindow(dev, win, (xEvent *) sev, evcount,
+                           DeviceStateNotifyMask, NullGrab);
+-    free(sev);
+ }
+ 
+ void

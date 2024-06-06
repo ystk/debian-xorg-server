@@ -1,0 +1,69 @@
+commit 0c1a93d319558fe3ab2d94f51d174b4f93810afd
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Tue Nov 28 15:19:04 2023 +1000
+
+    Xi: allocate enough XkbActions for our buttons
+    
+    button->xkb_acts is supposed to be an array sufficiently large for all
+    our buttons, not just a single XkbActions struct. Allocating
+    insufficient memory here means when we memcpy() later in
+    XkbSetDeviceInfo we write into memory that wasn't ours to begin with,
+    leading to the usual security ooopsiedaisies.
+    
+    CVE-2023-6377, ZDI-CAN-22412, ZDI-CAN-22413
+    
+    This vulnerability was discovered by:
+    Jan-Niklas Sohn working with Trend Micro Zero Day Initiative
+
+Index: xorg-server-1.19.2/Xi/exevents.c
+===================================================================
+--- xorg-server-1.19.2.orig/Xi/exevents.c	2023-12-17 14:40:45.806766748 +0100
++++ xorg-server-1.19.2/Xi/exevents.c	2023-12-17 14:40:45.802766747 +0100
+@@ -567,13 +567,13 @@
+         }
+ 
+         if (from->button->xkb_acts) {
+-            if (!to->button->xkb_acts) {
+-                to->button->xkb_acts = calloc(1, sizeof(XkbAction));
+-                if (!to->button->xkb_acts)
+-                    FatalError("[Xi] not enough memory for xkb_acts.\n");
+-            }
++            size_t maxbuttons = max(to->button->numButtons, from->button->numButtons);
++            to->button->xkb_acts = xnfreallocarray(to->button->xkb_acts,
++                                                   maxbuttons,
++                                                   sizeof(XkbAction));
++            memset(to->button->xkb_acts, 0, maxbuttons * sizeof(XkbAction));
+             memcpy(to->button->xkb_acts, from->button->xkb_acts,
+-                   sizeof(XkbAction));
++                   from->button->numButtons * sizeof(XkbAction));
+         }
+         else {
+             free(to->button->xkb_acts);
+Index: xorg-server-1.19.2/dix/devices.c
+===================================================================
+--- xorg-server-1.19.2.orig/dix/devices.c	2023-12-17 14:40:45.806766748 +0100
++++ xorg-server-1.19.2/dix/devices.c	2023-12-17 14:40:45.802766747 +0100
+@@ -2492,6 +2492,8 @@
+ 
+     if (master->button && master->button->numButtons != maxbuttons) {
+         int i;
++        int last_num_buttons = master->button->numButtons;
++
+         DeviceChangedEvent event = {
+             .header = ET_Internal,
+             .type = ET_DeviceChanged,
+@@ -2502,6 +2504,14 @@
+         };
+ 
+         master->button->numButtons = maxbuttons;
++        if (last_num_buttons < maxbuttons) {
++            master->button->xkb_acts = xnfreallocarray(master->button->xkb_acts,
++                                                       maxbuttons,
++                                                       sizeof(XkbAction));
++            memset(&master->button->xkb_acts[last_num_buttons],
++                   0,
++                   (maxbuttons - last_num_buttons) * sizeof(XkbAction));
++        }
+ 
+         memcpy(&event.buttons.names, master->button->labels, maxbuttons *
+                sizeof(Atom));
