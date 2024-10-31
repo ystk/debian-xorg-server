@@ -49,3 +49,5 @@ glx-Call-XACE-hooks-on-the-GLX-buffer.patch
 0002-Xi-ProcXIPassiveGrabDevice-needs-to-use-unswapped-le.patch
 0003-render-fix-refcounting-of-glyphs-during-ProcRenderAd.patch
 0004-render-Avoid-possible-double-free-in-ProcRenderAddGl.patch
+
+xkb-Fix-buffer-overflow-in-_XkbSetCompatMap.patch

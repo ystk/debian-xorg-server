@@ -1,3 +1,11 @@
+xorg-server (2:1.16.4-1+deb8u17) jessie-security; urgency=high
+
+  * Non-maintainer upload by the ELTS Team.
+  * CVE-2024-9632
+    xkb: Fix buffer overflow in _XkbSetCompatMap()
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Sun, 27 Oct 2024 12:03:02 +0100
+
 xorg-server (2:1.16.4-1+deb8u16) jessie-security; urgency=medium
 
   * Non-maintainer upload by the ELTS Team.
