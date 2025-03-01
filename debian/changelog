@@ -1,3 +1,30 @@
+xorg-server (2:1.16.4-1+deb8u18) jessie-security; urgency=high
+
+  * Non-maintainer upload by the ELTS Team.
+  * CVE-2025-26594
+    dix: keep a ref to the rootCursor
+    Cursor: Refuse to free the root cursor
+  * CVE-2025-26595
+    xkb: Fix buffer overflow in XkbVModMaskText()
+  * CVE-2025-26596
+    xkb: Fix computation of XkbSizeKeySyms
+  * CVE-2025-26597
+    xkb: Fix buffer overflow in XkbChangeTypesOfKey()
+  * CVE-2025-26598
+    Xi: Fix barrier device search
+  * CVE-2025-26599
+    composite: Handle failure to redirect in compRedirectWindow()
+    composite: initialize border clip even when pixmap alloc fails
+  * CVE-2025-26600
+    dix: Dequeue pending events on frozen device on removal
+  * CVE-2025-26601
+    sync: Do not let sync objects uninitialized
+    sync: Check values before applying changes
+    sync: Do not fail SyncAddTriggerToSyncObject()
+    sync: Apply changes last in SyncChangeAlarmAttributes()
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Sun, 23 Feb 2025 10:03:02 +0100
+
 xorg-server (2:1.16.4-1+deb8u17) jessie-security; urgency=high
 
   * Non-maintainer upload by the ELTS Team.

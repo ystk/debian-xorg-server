@@ -51,3 +51,18 @@ glx-Call-XACE-hooks-on-the-GLX-buffer.patch
 0004-render-Avoid-possible-double-free-in-ProcRenderAddGl.patch
 
 xkb-Fix-buffer-overflow-in-_XkbSetCompatMap.patch
+
+CVE-2025-26594/0001-Cursor-Refuse-to-free-the-root-cursor.patch
+CVE-2025-26594/0002-dix-keep-a-ref-to-the-rootCursor.patch
+CVE-2025-26595/0001-xkb-Fix-buffer-overflow-in-XkbVModMaskText.patch
+CVE-2025-26596/0001-xkb-Fix-computation-of-XkbSizeKeySyms.patch
+CVE-2025-26597/0001-xkb-Fix-buffer-overflow-in-XkbChangeTypesOfKey.patch
+CVE-2025-26598/0001-Xi-Fix-barrier-device-search.patch
+CVE-2025-26599/0001-composite-Handle-failure-to-redirect-in-compRedirect.patch
+CVE-2025-26599/0002-composite-initialize-border-clip-even-when-pixmap-al.patch
+CVE-2025-26600/0001-dix-Dequeue-pending-events-on-frozen-device-on-remov.patch
+CVE-2025-26601/0001-sync-Do-not-let-sync-objects-uninitialized.patch
+CVE-2025-26601/0002-sync-Check-values-before-applying-changes.patch
+CVE-2025-26601/0003-sync-Do-not-fail-SyncAddTriggerToSyncObject.patch
+CVE-2025-26601/0004-sync-Apply-changes-last-in-SyncChangeAlarmAttributes.patch
+
