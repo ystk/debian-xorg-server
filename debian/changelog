@@ -1,3 +1,16 @@
+xorg-server (2:1.16.4-1+deb8u19) jessie-security; urgency=high
+
+  * CVE-2025-49175: render: Avoid 0 or less animated cursors
+  * CVE-2025-49176: os: Do not overflow the integer size with BigRequest
+  * CVE-2025-49176: os: Check for integer overflow on BigRequest length
+  * CVE-2025-49178: os: Account for bytes to ignore when sharing input buffer
+  * CVE-2025-49179: record: Check for overflow in
+    RecordSanityCheckRegisterClients
+  * CVE-2025-49180: randr: Check for overflow in RRChangeProviderProperty
+  * CVE-2025-49180: xfree86: Check for RandR provider functions
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Wed, 25 Jun 2025 12:44:52 +0200
+
 xorg-server (2:1.16.4-1+deb8u18) jessie-security; urgency=high
 
   * Non-maintainer upload by the ELTS Team.

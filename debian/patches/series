@@ -65,4 +65,10 @@ CVE-2025-26601/0001-sync-Do-not-let-sync-objects-uninitialized.patch
 CVE-2025-26601/0002-sync-Check-values-before-applying-changes.patch
 CVE-2025-26601/0003-sync-Do-not-fail-SyncAddTriggerToSyncObject.patch
 CVE-2025-26601/0004-sync-Apply-changes-last-in-SyncChangeAlarmAttributes.patch
-
+CVE-2025-49175/0001-render-Avoid-0-or-less-animated-cursors.patch
+CVE-2025-49176/0001-os-Do-not-overflow-the-integer-size-with-BigRequest.patch
+CVE-2025-49176/0002-os-Check-for-integer-overflow-on-BigRequest-length.patch
+CVE-2025-49178/0001-os-Account-for-bytes-to-ignore-when-sharing-input-bu.patch
+CVE-2025-49179/0001-record-Check-for-overflow-in-RecordSanityCheckRegist.patch
+CVE-2025-49180/0001-randr-Check-for-overflow-in-RRChangeProviderProperty.patch
+CVE-2025-49180/0002-xfree86-Check-for-RandR-provider-functions.patch
